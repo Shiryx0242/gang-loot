@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { perPersonOf, type RoundingMode } from './money';
-import type { SessionFull, SessionPlayerRow } from './types';
+import type { ItemPreset, SessionFull, SessionPlayerRow } from './types';
 
 /** วันที่ท้องถิ่นรูปแบบ yyyy-mm-dd (ไม่ใช้ toISOString เพราะจะเพี้ยนเป็นเวลา UTC) */
 export function localDate(d: Date = new Date()): string {
@@ -64,4 +64,48 @@ export async function fetchMemberNames(gangId: string): Promise<Record<string, s
     map[r.user_id] = r.display_name?.trim() || `สมาชิก ${r.user_id.slice(0, 4)}`;
   }
   return map;
+}
+
+const LOCAL_PRESETS_KEY = (gangId: string) => `gang_loot_presets_${gangId}`;
+
+function readLocalPresets(gangId: string): ItemPreset[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_PRESETS_KEY(gangId));
+    return raw ? (JSON.parse(raw) as ItemPreset[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeLocalPresets(gangId: string, rows: ItemPreset[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(LOCAL_PRESETS_KEY(gangId), JSON.stringify(rows));
+  } catch {
+    // ignore
+  }
+}
+
+/** ดึงรายการไอเทมสำเร็จรูปของแก็ง (หากยังไม่ได้รัน SQL ตาราง item_presets จะ fallback ไปใช้ localStorage) */
+export async function fetchItemPresets(gangId: string): Promise<{ rows: ItemPreset[]; tableMissing: boolean }> {
+  const { data, error } = await supabase
+    .from('item_presets')
+    .select('*')
+    .eq('gang_id', gangId)
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true });
+  if (error) {
+    const msg = error.message || '';
+    if (msg.includes('item_presets') || error.code === '42P01' || error.code === 'PGRST205') {
+      return { rows: readLocalPresets(gangId), tableMissing: true };
+    }
+    throw error;
+  }
+  const rows = ((data ?? []) as ItemPreset[]).map((r) => ({
+    ...r,
+    default_price: Number(r.default_price),
+  }));
+  writeLocalPresets(gangId, rows);
+  return { rows, tableMissing: false };
 }

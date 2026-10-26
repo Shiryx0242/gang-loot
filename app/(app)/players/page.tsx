@@ -116,13 +116,13 @@ export default function PlayersPage() {
         </form>
       )}
 
-      <label className="flex items-center gap-2 text-sm text-indigo-100/80">
+      <label className="flex items-center gap-2 text-sm text-violet-100/80">
         <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
         แสดงคนที่ปิดการใช้งานด้วย
       </label>
 
-      {loading && <p className="text-sm text-indigo-200/70">กำลังโหลด...</p>}
-      {!loading && shown.length === 0 && <p className="card text-sm text-indigo-200/70">ยังไม่มีรายชื่อผู้เล่น</p>}
+      {loading && <p className="text-sm text-violet-200/70">กำลังโหลด...</p>}
+      {!loading && shown.length === 0 && <p className="card text-sm text-violet-200/70">ยังไม่มีรายชื่อผู้เล่น</p>}
 
       <ul className="space-y-2">
         {shown.map((p) => (
@@ -145,9 +145,9 @@ export default function PlayersPage() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <span className="font-medium">{p.name}</span>
-                  {p.game_id && <span className="ml-2 text-xs text-indigo-200/60">#{p.game_id}</span>}
+                  {p.game_id && <span className="ml-2 text-xs text-violet-200/60">#{p.game_id}</span>}
                   {!p.is_active && <span className="badge ml-2 bg-slate-500/30 text-slate-200">ปิดใช้งาน</span>}
-                  {p.note && <div className="text-xs text-indigo-200/60">{p.note}</div>}
+                  {p.note && <div className="text-xs text-violet-200/60">{p.note}</div>}
                 </div>
                 {canEdit && (
                   <div className="flex gap-1">

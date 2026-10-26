@@ -6,11 +6,13 @@ import { useParams, useRouter } from 'next/navigation';
 import { useGang } from '@/lib/gang-context';
 import { supabase } from '@/lib/supabase';
 import { calcSplit, formatFull, formatShort, parseMoney } from '@/lib/money';
-import { fetchMemberNames, formatDateTime, localDate } from '@/lib/queries';
+import { fetchItemPresets, fetchMemberNames, formatDateTime, localDate, writeLocalPresets } from '@/lib/queries';
 import { ACTION_LABELS, describeLog, logAudit } from '@/lib/audit';
 import {
+  DEFAULT_ITEM_PRESETS,
   STATUS_LABELS,
   type AuditLog,
+  type ItemPreset,
   type Player,
   type SessionItem,
   type SessionPlayerRow,
@@ -44,6 +46,9 @@ export default function SessionEditorPage() {
   const mode = current?.gang.rounding_mode ?? 'ceil_1000';
 
   const [players, setPlayers] = useState<Player[]>([]);
+  const [presets, setPresets] = useState<ItemPreset[]>([]);
+  const [presetsMissingTable, setPresetsMissingTable] = useState(false);
+
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(localDate());
   const [note, setNote] = useState('');
@@ -58,6 +63,10 @@ export default function SessionEditorPage() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [newPlayerName, setNewPlayerName] = useState('');
+  const [playerQuery, setPlayerQuery] = useState('');
+  const [presetQuery, setPresetQuery] = useState('');
+  const [loadingLastTeam, setLoadingLastTeam] = useState(false);
+
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
   const [dirty, setDirtyState] = useState(false);
@@ -91,6 +100,17 @@ export default function SessionEditorPage() {
     if (!gangId) return;
     const { data } = await supabase.from('players').select('*').eq('gang_id', gangId).order('name');
     setPlayers((data ?? []) as Player[]);
+  }, [gangId]);
+
+  const loadPresets = useCallback(async () => {
+    if (!gangId) return;
+    try {
+      const { rows, tableMissing } = await fetchItemPresets(gangId);
+      setPresets(rows);
+      setPresetsMissingTable(tableMissing);
+    } catch {
+      // ignore
+    }
   }, [gangId]);
 
   const loadLogs = useCallback(async () => {
@@ -146,32 +166,36 @@ export default function SessionEditorPage() {
     setLoaded(true);
   }, [id]);
 
-  const loadFromTemplate = useCallback(async (fromId: string) => {
-    const [s, its, sps] = await Promise.all([
-      supabase.from('sessions').select('title, note').eq('id', fromId).maybeSingle(),
-      supabase.from('session_items').select('*').eq('session_id', fromId).order('created_at').order('id'),
-      supabase.from('session_players').select('player_id').eq('session_id', fromId),
-    ]);
-    const itemRows = (its.data ?? []) as SessionItem[];
-    if (s.data) {
-      const t = s.data as { title: string | null; note: string | null };
-      setTitle(t.title ?? '');
-      setNote(t.note ?? '');
-    }
-    if (itemRows.length) {
-      setItems(itemRows.map((i) => ({ key: newKey(), name: i.name, priceText: String(i.price), qty: String(i.quantity) })));
-    }
-    const sel: Record<string, boolean> = {};
-    for (const sp of (sps.data ?? []) as { player_id: string }[]) sel[sp.player_id] = true;
-    setSelected(sel);
-    markDirty();
-  }, [markDirty]);
+  const loadFromTemplate = useCallback(
+    async (fromId: string) => {
+      const [s, its, sps] = await Promise.all([
+        supabase.from('sessions').select('title, note').eq('id', fromId).maybeSingle(),
+        supabase.from('session_items').select('*').eq('session_id', fromId).order('created_at').order('id'),
+        supabase.from('session_players').select('player_id').eq('session_id', fromId),
+      ]);
+      const itemRows = (its.data ?? []) as SessionItem[];
+      if (s.data) {
+        const t = s.data as { title: string | null; note: string | null };
+        setTitle(t.title ?? '');
+        setNote(t.note ?? '');
+      }
+      if (itemRows.length) {
+        setItems(itemRows.map((i) => ({ key: newKey(), name: i.name, priceText: String(i.price), qty: String(i.quantity) })));
+      }
+      const sel: Record<string, boolean> = {};
+      for (const sp of (sps.data ?? []) as { player_id: string }[]) sel[sp.player_id] = true;
+      setSelected(sel);
+      markDirty();
+    },
+    [markDirty],
+  );
 
   // โหลดข้อมูลเมื่อเปิดหน้า / เปลี่ยนรอบ
   useEffect(() => {
     if (!gangId) return;
     setLoaded(false);
     loadPlayers();
+    loadPresets();
     if (isNew) {
       resetForm();
       const from = new URLSearchParams(window.location.search).get('from');
@@ -181,11 +205,22 @@ export default function SessionEditorPage() {
     } else {
       loadSession().then(loadLogs);
     }
-  }, [gangId, id, isNew, loadPlayers, loadSession, loadLogs, resetForm, loadFromTemplate]);
+  }, [gangId, id, isNew, loadPlayers, loadPresets, loadSession, loadLogs, resetForm, loadFromTemplate]);
 
   // Realtime: หัวแก็ง/รองแก็งเปิดคนละที่ เห็นการเปลี่ยนแปลงทันที
   useEffect(() => {
-    if (isNew || !gangId) return;
+    if (!gangId) return;
+    const presetChannel = supabase
+      .channel(`session-presets-${gangId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'item_presets', filter: `gang_id=eq.${gangId}` }, () => loadPresets())
+      .subscribe();
+
+    if (isNew) {
+      return () => {
+        supabase.removeChannel(presetChannel);
+      };
+    }
+
     const refreshPaid = async () => {
       const { data } = await supabase.from('session_players').select('*').eq('session_id', id);
       const pd: Record<string, PaidInfo> = {};
@@ -204,12 +239,17 @@ export default function SessionEditorPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions', filter: `id=eq.${id}` }, onContentChange)
       .subscribe();
     return () => {
+      supabase.removeChannel(presetChannel);
       supabase.removeChannel(channel);
     };
-  }, [id, isNew, gangId, loadSession, loadLogs]);
+  }, [id, isNew, gangId, loadPresets, loadSession, loadLogs]);
 
   // ---------- คำนวณ (real-time ขณะพิมพ์) ----------
   const playerMap = useMemo(() => Object.fromEntries(players.map((p) => [p.id, p])), [players]);
+  const presetByName = useMemo(
+    () => Object.fromEntries(presets.map((p) => [p.name.trim().toLowerCase(), p])),
+    [presets],
+  );
 
   const parsed = useMemo(
     () =>
@@ -230,10 +270,32 @@ export default function SessionEditorPage() {
     [parsed],
   );
 
+  const qtyByPresetName = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const it of parsed) {
+      if (!it.name) continue;
+      const k = it.name.toLowerCase();
+      map[k] = (map[k] ?? 0) + it.quantity;
+    }
+    return map;
+  }, [parsed]);
+
   const selectedIds = useMemo(() => players.filter((p) => selected[p.id]).map((p) => p.id), [players, selected]);
   const split = useMemo(() => calcSplit(validItems, selectedIds.length, mode), [validItems, selectedIds.length, mode]);
 
-  const visiblePlayers = players.filter((p) => p.is_active || selected[p.id]);
+  const visiblePlayers = useMemo(() => {
+    const base = players.filter((p) => p.is_active || selected[p.id]);
+    const q = playerQuery.trim().toLowerCase();
+    if (!q) return base;
+    return base.filter((p) => p.name.toLowerCase().includes(q) || (p.game_id ?? '').toLowerCase().includes(q));
+  }, [players, selected, playerQuery]);
+
+  const activePresets = useMemo(() => {
+    const base = presets.filter((p) => p.is_active);
+    const q = presetQuery.trim().toLowerCase();
+    if (!q) return base;
+    return base.filter((p) => p.name.toLowerCase().includes(q));
+  }, [presets, presetQuery]);
 
   // ---------- การกระทำ ----------
   function updateItem(key: string, patch: Partial<ItemDraft>) {
@@ -254,10 +316,185 @@ export default function SessionEditorPage() {
     markDirty();
   }
 
+  function handlePresetClick(preset: ItemPreset) {
+    if (!canEdit) return;
+    setItems((prev) => {
+      const targetLower = preset.name.trim().toLowerCase();
+      const idx = prev.findIndex((i) => i.name.trim().toLowerCase() === targetLower);
+      if (idx >= 0) {
+        const currentQty = Math.max(1, parseInt(prev[idx].qty, 10) || 1);
+        return prev.map((item, i) => (i === idx ? { ...item, qty: String(currentQty + 1) } : item));
+      }
+      const newRow: ItemDraft = {
+        key: newKey(),
+        name: preset.name,
+        priceText: String(preset.default_price),
+        qty: '1',
+      };
+      if (prev.length === 1 && !prev[0].name.trim() && !prev[0].priceText.trim()) {
+        return [newRow];
+      }
+      return [...prev, newRow];
+    });
+    markDirty();
+  }
+
+  function handlePresetDecrement(preset: ItemPreset) {
+    if (!canEdit) return;
+    setItems((prev) => {
+      const targetLower = preset.name.trim().toLowerCase();
+      const idx = prev.findIndex((i) => i.name.trim().toLowerCase() === targetLower);
+      if (idx < 0) return prev;
+      const currentQty = Math.max(1, parseInt(prev[idx].qty, 10) || 1);
+      if (currentQty > 1) {
+        return prev.map((item, i) => (i === idx ? { ...item, qty: String(currentQty - 1) } : item));
+      }
+      const next = prev.filter((_, i) => i !== idx);
+      return next.length ? next : [emptyItem()];
+    });
+    markDirty();
+  }
+
+  async function seedPresetsQuick() {
+    if (!canEdit || !gangId) return;
+    const existingLower = new Set(presets.map((p) => p.name.trim().toLowerCase()));
+    const toAdd = DEFAULT_ITEM_PRESETS.filter((d) => !existingLower.has(d.name.trim().toLowerCase()));
+    if (toAdd.length === 0) return;
+    const maxOrder = presets.reduce((m, p) => Math.max(m, p.sort_order), -1);
+
+    if (presetsMissingTable) {
+      const added: ItemPreset[] = toAdd.map((d, idx) => ({
+        id: crypto.randomUUID(),
+        gang_id: gangId,
+        name: d.name,
+        default_price: d.default_price,
+        sort_order: maxOrder + 1 + idx,
+        is_active: true,
+        created_at: new Date().toISOString(),
+      }));
+      const next = [...presets, ...added];
+      writeLocalPresets(gangId, next);
+      setPresets(next);
+      return;
+    }
+
+    const { error } = await supabase.from('item_presets').insert(
+      toAdd.map((d, idx) => ({
+        gang_id: gangId,
+        name: d.name,
+        default_price: d.default_price,
+        sort_order: maxOrder + 1 + idx,
+      })),
+    );
+    if (error) {
+      setError('นำเข้ารายการตั้งต้นไม่สำเร็จ: ' + error.message);
+      return;
+    }
+    logAudit(gangId, null, 'preset.seed', { count: toAdd.length });
+    loadPresets();
+  }
+
+  async function saveRowAsPreset(name: string, price: number) {
+    if (!canEdit || !gangId) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const maxOrder = presets.reduce((m, p) => Math.max(m, p.sort_order), -1);
+
+    if (presetsMissingTable) {
+      const item: ItemPreset = {
+        id: crypto.randomUUID(),
+        gang_id: gangId,
+        name: trimmed,
+        default_price: price,
+        sort_order: maxOrder + 1,
+        is_active: true,
+        created_at: new Date().toISOString(),
+      };
+      const next = [...presets, item];
+      writeLocalPresets(gangId, next);
+      setPresets(next);
+      return;
+    }
+
+    const { error } = await supabase.from('item_presets').insert({
+      gang_id: gangId,
+      name: trimmed,
+      default_price: price,
+      sort_order: maxOrder + 1,
+    });
+    if (error) return setError('บันทึกไอเทมสำเร็จรูปไม่สำเร็จ: ' + error.message);
+    logAudit(gangId, null, 'preset.add', { name: trimmed, price });
+    loadPresets();
+  }
+
+  async function updatePresetDefaultPrice(preset: ItemPreset, newPrice: number) {
+    if (!canEdit || !gangId) return;
+    if (presetsMissingTable) {
+      const next = presets.map((p) => (p.id === preset.id ? { ...p, default_price: newPrice } : p));
+      writeLocalPresets(gangId, next);
+      setPresets(next);
+      return;
+    }
+    const { error } = await supabase.from('item_presets').update({ default_price: newPrice }).eq('id', preset.id);
+    if (error) return setError('อัปเดตราคามาตรฐานไม่สำเร็จ: ' + error.message);
+    logAudit(gangId, null, 'preset.update', { name: preset.name, price: newPrice });
+    loadPresets();
+  }
+
   function togglePlayer(pid: string) {
     if (!canEdit) return;
     setSelected((prev) => ({ ...prev, [pid]: !prev[pid] }));
     markDirty();
+  }
+
+  function selectAllActivePlayers() {
+    if (!canEdit) return;
+    const next: Record<string, boolean> = {};
+    for (const p of players) {
+      if (p.is_active) next[p.id] = true;
+    }
+    setSelected(next);
+    markDirty();
+  }
+
+  function clearSelectedPlayers() {
+    if (!canEdit) return;
+    setSelected({});
+    markDirty();
+  }
+
+  async function selectLastSessionTeam() {
+    if (!canEdit || !gangId) return;
+    setLoadingLastTeam(true);
+    setError(null);
+    try {
+      let q = supabase
+        .from('sessions')
+        .select('id, session_players(player_id)')
+        .eq('gang_id', gangId)
+        .is('deleted_at', null)
+        .order('session_date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (!isNew) q = q.neq('id', id);
+      const { data, error } = await q;
+      if (error) throw error;
+      const latest = (data?.[0] ?? null) as { id: string; session_players: { player_id: string }[] } | null;
+      if (!latest || !latest.session_players.length) {
+        setError('ยังไม่มีประวัติรอบก่อนหน้าให้ดึงรายชื่อทีม');
+        return;
+      }
+      const next: Record<string, boolean> = {};
+      for (const sp of latest.session_players) {
+        next[sp.player_id] = true;
+      }
+      setSelected(next);
+      markDirty();
+    } catch (e: unknown) {
+      setError('ดึงทีมล่าสุดไม่สำเร็จ: ' + (e instanceof Error ? e.message : ''));
+    } finally {
+      setLoadingLastTeam(false);
+    }
   }
 
   async function quickAddPlayer() {
@@ -459,7 +696,7 @@ export default function SessionEditorPage() {
 
   // ---------- แสดงผล ----------
   if (!current) return null;
-  if (!loaded) return <p className="text-indigo-200/70">กำลังโหลด...</p>;
+  if (!loaded) return <p className="text-violet-200/70">กำลังโหลด...</p>;
   if (notFound) {
     return (
       <div className="card space-y-2">
@@ -473,6 +710,7 @@ export default function SessionEditorPage() {
 
   const readOnly = !canEdit;
   const doneCount = Object.values(paid).filter((p) => p.is_paid).length;
+  const totalActivePlayers = players.filter((p) => p.is_active).length;
 
   return (
     <div className="space-y-4">
@@ -511,7 +749,7 @@ export default function SessionEditorPage() {
         </div>
       </div>
 
-      {readOnly && <p className="rounded-lg bg-indigo-400/10 p-3 text-sm text-indigo-100">คุณเป็นสมาชิก ดูได้อย่างเดียว</p>}
+      {readOnly && <p className="rounded-lg bg-violet-400/10 p-3 text-sm text-violet-100">คุณเป็นสมาชิก ดูได้อย่างเดียว</p>}
       {remoteChanged && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg bg-amber-500/10 p-3 text-sm text-amber-100">
           มีการแก้ไขรอบนี้จากอีกเครื่อง
@@ -581,18 +819,60 @@ export default function SessionEditorPage() {
         </div>
       </section>
 
+      {/* ผู้เข้าร่วม */}
       <section className="card space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="font-medium">ผู้เข้าร่วม ({selectedIds.length} คน)</h2>
-          {!isNew && selectedIds.length > 0 && (
-            <span className="text-xs text-indigo-200/70">
-              จ่ายแล้ว {doneCount}/{Object.keys(paid).length}
-            </span>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <h2 className="font-medium">ผู้เข้าร่วม ({selectedIds.length} คน)</h2>
+            {!isNew && selectedIds.length > 0 && (
+              <span className="text-xs text-violet-200/70">
+                จ่ายแล้ว {doneCount}/{Object.keys(paid).length}
+              </span>
+            )}
+          </div>
+          {canEdit && players.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={selectAllActivePlayers}
+                disabled={totalActivePlayers === 0}
+              >
+                เลือกทั้งหมด ({totalActivePlayers})
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={selectLastSessionTeam}
+                disabled={loadingLastTeam}
+              >
+                {loadingLastTeam ? 'กำลังดึง...' : '↺ ใช้ทีมรอบล่าสุด'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={clearSelectedPlayers}
+                disabled={selectedIds.length === 0}
+              >
+                ล้างที่เลือก
+              </button>
+            </div>
           )}
         </div>
 
+        {players.filter((p) => p.is_active || selected[p.id]).length > 12 && (
+          <input
+            className="input"
+            placeholder="🔍 ค้นหาชื่อผู้เล่น..."
+            value={playerQuery}
+            onChange={(e) => setPlayerQuery(e.target.value)}
+          />
+        )}
+
         {visiblePlayers.length === 0 && (
-          <p className="text-sm text-indigo-200/60">ยังไม่มีรายชื่อผู้เล่น เพิ่มชื่อด้านล่างได้เลย</p>
+          <p className="text-sm text-violet-200/60">
+            {playerQuery.trim() ? 'ไม่พบชื่อผู้เล่นที่ค้นหา' : 'ยังไม่มีรายชื่อผู้เล่น เพิ่มชื่อด้านล่างได้เลย'}
+          </p>
         )}
         <div className="flex flex-wrap gap-2">
           {visiblePlayers.map((p) => (
@@ -601,14 +881,10 @@ export default function SessionEditorPage() {
               type="button"
               disabled={readOnly}
               onClick={() => togglePlayer(p.id)}
-              className={`rounded-full border px-3 py-1 text-sm transition ${
-                selected[p.id]
-                  ? 'border-indigo-400 bg-indigo-500/40 text-white'
-                  : 'border-indigo-300/20 bg-transparent text-indigo-100/70 hover:bg-indigo-400/10'
-              } ${!p.is_active ? 'opacity-60' : ''}`}
+              className={`chip ${selected[p.id] ? 'chip-active' : 'chip-idle'} ${!p.is_active ? 'opacity-60' : ''}`}
             >
-              {selected[p.id] ? '✓ ' : ''}
-              {p.name}
+              {selected[p.id] && <span>✓</span>}
+              <span>{p.name}</span>
             </button>
           ))}
         </div>
@@ -647,7 +923,7 @@ export default function SessionEditorPage() {
                 {selectedIds.map((pid) => {
                   const info = paid[pid];
                   return (
-                    <tr key={pid} className="border-t border-indigo-300/10">
+                    <tr key={pid} className="border-t border-violet-300/10">
                       <td className="td">{playerMap[pid]?.name}</td>
                       <td className="td text-right">{split.perPerson === null ? '-' : formatFull(split.perPerson)}</td>
                       <td className="td text-right">
@@ -662,7 +938,7 @@ export default function SessionEditorPage() {
                             {info.is_paid ? '✅ จ่ายแล้ว' : 'ยังไม่จ่าย'}
                           </button>
                         ) : (
-                          <span className="text-xs text-indigo-200/50">บันทึกก่อนจึงติ๊กได้</span>
+                          <span className="text-xs text-violet-200/50">บันทึกก่อนจึงติ๊กได้</span>
                         )}
                       </td>
                     </tr>
@@ -674,56 +950,162 @@ export default function SessionEditorPage() {
         )}
       </section>
 
+      {/* ไอเทม */}
       <section className="card space-y-3">
-        <h2 className="font-medium">ไอเทม</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-medium">ไอเทม</h2>
+          <Link href="/items" className="text-xs text-violet-300 hover:underline">
+            ⚙ จัดการไอเทมสำเร็จรูป
+          </Link>
+        </div>
+
+        {/* ส่วนเลือกไอเทมสำเร็จรูป (Chips) */}
+        {canEdit && (
+          <div className="space-y-2 rounded-xl border border-violet-300/15 bg-[#120b2e]/70 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs text-violet-200/80">
+                เลือกไอเทมด่วน (คลิกเพื่อเพิ่ม / คลิกซ้ำเพื่อ +1 / คลิกขวาเพื่อลด)
+              </span>
+              {presets.filter((p) => p.is_active).length === 0 && (
+                <button type="button" className="btn btn-primary btn-sm" onClick={seedPresetsQuick}>
+                  📥 นำเข้ารายการตั้งต้น (7 รายการ)
+                </button>
+              )}
+            </div>
+
+            {presets.filter((p) => p.is_active).length > 12 && (
+              <input
+                className="input"
+                placeholder="🔍 ค้นหาไอเทมสำเร็จรูป..."
+                value={presetQuery}
+                onChange={(e) => setPresetQuery(e.target.value)}
+              />
+            )}
+
+            {activePresets.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {activePresets.map((preset) => {
+                  const count = qtyByPresetName[preset.name.trim().toLowerCase()] ?? 0;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => handlePresetClick(preset)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        handlePresetDecrement(preset);
+                      }}
+                      className={`chip ${count > 0 ? 'chip-active' : 'chip-idle'}`}
+                      title="คลิกซ้าย = เพิ่มจำนวน (+1) | คลิกขวา = ลดจำนวน (-1)"
+                    >
+                      <span className="font-medium">{preset.name}</span>
+                      <span className="text-xs opacity-80">· {formatShort(preset.default_price)}</span>
+                      {count > 0 && (
+                        <span className="ml-0.5 rounded-full bg-white/20 px-1.5 py-0.5 text-xs font-bold">
+                          ×{count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="space-y-2">
           {items.map((it, idx) => {
             const p = parsed[idx];
             const badPrice = Boolean(it.priceText.trim()) && p.price === null;
+            const matchedPreset = p.name ? presetByName[p.name.toLowerCase()] : undefined;
+            const priceDiffers =
+              matchedPreset !== undefined && p.price !== null && p.price !== matchedPreset.default_price;
+            const canSaveAsPreset = canEdit && Boolean(p.name) && p.price !== null && !matchedPreset;
+
             return (
-              <div key={it.key} className="rounded-xl border border-indigo-300/10 p-2">
-                <div className="flex gap-2">
+              <div key={it.key} className="rounded-xl border border-violet-300/15 bg-[#120b2e]/50 p-2.5">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <input
-                    className="input"
-                    placeholder="ชื่อไอเทม เช่น BOX CIL"
+                    className="input sm:flex-1"
+                    placeholder="ชื่อไอเทม เช่น weapon box"
                     value={it.name}
                     disabled={readOnly}
                     onChange={(e) => updateItem(it.key, { name: e.target.value })}
                   />
-                  {canEdit && (
-                    <button type="button" className="btn btn-danger btn-sm" onClick={() => removeItem(it.key)} title="ลบแถว">
-                      ✕
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <input
+                      className={`input !w-28 sm:!w-32 ${badPrice ? '!border-red-400' : ''}`}
+                      placeholder="ราคา 50k"
+                      inputMode="text"
+                      value={it.priceText}
+                      disabled={readOnly}
+                      onChange={(e) => updateItem(it.key, { priceText: e.target.value })}
+                    />
+                    <span className="text-sm text-violet-200/60">×</span>
+                    <input
+                      className="input !w-16 text-center"
+                      inputMode="numeric"
+                      value={it.qty}
+                      disabled={readOnly}
+                      onChange={(e) => updateItem(it.key, { qty: e.target.value.replace(/[^\d]/g, '') })}
+                    />
+                    <span
+                      className={`ml-auto min-w-[6.5rem] text-right text-sm font-medium tabular-nums ${
+                        badPrice ? 'text-red-300' : 'text-violet-100'
+                      }`}
+                    >
+                      {badPrice ? 'ราคาไม่ถูกต้อง' : p.price !== null ? `= ${formatFull(p.price * p.quantity)}` : ''}
+                    </span>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm"
+                        onClick={() => removeItem(it.key)}
+                        title="ลบแถว"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="mt-2 flex items-center gap-2">
-                  <input
-                    className={`input !w-32 ${badPrice ? '!border-red-400' : ''}`}
-                    placeholder="ราคา 250k"
-                    inputMode="text"
-                    value={it.priceText}
-                    disabled={readOnly}
-                    onChange={(e) => updateItem(it.key, { priceText: e.target.value })}
-                  />
-                  <span className="text-sm text-indigo-200/60">×</span>
-                  <input
-                    className="input !w-16"
-                    inputMode="numeric"
-                    value={it.qty}
-                    disabled={readOnly}
-                    onChange={(e) => updateItem(it.key, { qty: e.target.value.replace(/[^\d]/g, '') })}
-                  />
-                  <span className={`ml-auto text-sm ${badPrice ? 'text-red-300' : 'text-indigo-100'}`}>
-                    {badPrice ? 'ราคาไม่ถูกต้อง' : p.price !== null ? `= ${formatFull(p.price * p.quantity)}` : ''}
-                  </span>
-                </div>
+
+                {/* แจ้งเตือนราคาต่างจากมาตรฐาน หรือปุ่มบันทึกเป็นรายการมาตรฐาน */}
+                {(priceDiffers || canSaveAsPreset) && (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
+                    {priceDiffers && matchedPreset && p.price !== null && (
+                      <>
+                        <span className="text-amber-300/90">
+                          ต่างจากราคามาตรฐาน ({formatShort(matchedPreset.default_price)})
+                        </span>
+                        {canEdit && (
+                          <button
+                            type="button"
+                            className="text-violet-300 underline hover:text-violet-100"
+                            onClick={() => updatePresetDefaultPrice(matchedPreset, p.price!)}
+                          >
+                            ตั้ง {formatShort(p.price)} เป็นราคามาตรฐาน
+                          </button>
+                        )}
+                      </>
+                    )}
+                    {canSaveAsPreset && p.price !== null && (
+                      <button
+                        type="button"
+                        className="text-violet-300 underline hover:text-violet-100"
+                        onClick={() => saveRowAsPreset(p.name, p.price!)}
+                      >
+                        + บันทึก &quot;{p.name}&quot; ({formatShort(p.price)}) ไว้ใช้ครั้งต่อไป
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
         {canEdit && (
           <button type="button" className="btn" onClick={addItem}>
-            + เพิ่มไอเทม
+            + ไอเทมอื่น
           </button>
         )}
       </section>
@@ -732,15 +1114,15 @@ export default function SessionEditorPage() {
         <section className="card">
           <h2 className="mb-2 font-medium">ประวัติการแก้ไขของรอบนี้</h2>
           {logs.length === 0 ? (
-            <p className="text-sm text-indigo-200/60">ยังไม่มีบันทึก</p>
+            <p className="text-sm text-violet-200/60">ยังไม่มีบันทึก</p>
           ) : (
             <ul className="space-y-1 text-sm">
               {logs.map((l) => (
-                <li key={l.id} className="flex flex-wrap gap-x-2 border-t border-indigo-300/10 pt-1">
-                  <span className="text-indigo-200/60">{formatDateTime(l.created_at)}</span>
+                <li key={l.id} className="flex flex-wrap gap-x-2 border-t border-violet-300/10 pt-1">
+                  <span className="text-violet-200/60">{formatDateTime(l.created_at)}</span>
                   <span className="font-medium">{(l.actor_id && names[l.actor_id]) || 'ใครสักคน'}</span>
                   <span>{ACTION_LABELS[l.action] ?? l.action}</span>
-                  <span className="text-indigo-100/70">{describeLog(l)}</span>
+                  <span className="text-violet-100/70">{describeLog(l)}</span>
                 </li>
               ))}
             </ul>
@@ -749,16 +1131,16 @@ export default function SessionEditorPage() {
       )}
 
       {/* แถบสรุปติดด้านล่าง */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-indigo-300/20 bg-[#0b1233]/95 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-violet-300/20 bg-[#0b061d]/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="text-sm text-indigo-200/70">รวม</span>
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 tabular-nums">
+            <span className="text-sm text-violet-200/70">รวม</span>
             <span className="text-lg font-bold">{formatFull(split.total)}</span>
-            <span className="text-sm text-indigo-200/70">÷ {selectedIds.length || '-'} =</span>
+            <span className="text-sm text-violet-200/70">÷ {selectedIds.length || '-'} =</span>
             <span className="text-xl font-bold text-emerald-300">
               {split.perPerson === null ? '-' : `${formatShort(split.perPerson)} (${formatFull(split.perPerson)})`}
             </span>
-            <span className="text-sm text-indigo-200/70">ต่อคน</span>
+            <span className="text-sm text-violet-200/70">ต่อคน</span>
             {split.overage !== null && split.overage > 0 && (
               <span className="text-xs text-amber-200">ส่วนเกินจากการปัด {formatFull(split.overage)}</span>
             )}

@@ -91,6 +91,20 @@ create table public.audit_logs (
   created_at timestamptz not null default now()
 );
 
+create table public.item_presets (
+  id uuid primary key default gen_random_uuid(),
+  gang_id uuid not null references public.gangs(id) on delete cascade,
+  name text not null,
+  default_price bigint not null default 0 check (default_price >= 0),
+  sort_order int not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create unique index item_presets_gang_name_uq
+  on public.item_presets (gang_id, lower(name));
+create index on public.item_presets (gang_id, sort_order);
+
 create index on public.players (gang_id);
 create index on public.sessions (gang_id, session_date desc);
 create index on public.session_items (session_id);
@@ -263,13 +277,22 @@ create policy audit_select on public.audit_logs for select to authenticated
 create policy audit_insert on public.audit_logs for insert to authenticated
   with check (public.is_gang_admin(gang_id) and actor_id = auth.uid());
 
+-- item_presets
+alter table public.item_presets enable row level security;
+create policy presets_select on public.item_presets for select to authenticated
+  using (public.is_gang_member(gang_id));
+create policy presets_write on public.item_presets for all to authenticated
+  using (public.is_gang_admin(gang_id))
+  with check (public.is_gang_admin(gang_id));
+
 -- ---------- Realtime ----------
 
 alter publication supabase_realtime add table
   public.sessions,
   public.session_items,
   public.session_players,
-  public.players;
+  public.players,
+  public.item_presets;
 
 -- ---------- Dashboard view ----------
 -- ยอดรวมต่อรอบ (ใช้ security_invoker เพื่อให้ RLS ของผู้เรียกทำงาน)

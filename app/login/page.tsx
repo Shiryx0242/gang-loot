@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
 import { useGang } from '@/lib/gang-context';
+import { ViperLogoFull } from '@/components/ViperLogo';
 
 export default function LoginPage() {
   const { user, authLoading } = useGang();
@@ -61,9 +62,9 @@ export default function LoginPage() {
     <div className="mx-auto flex min-h-screen max-w-sm items-center p-4">
       <div className="card w-full space-y-4">
         <div className="text-center">
-          <div className="text-4xl">⚔️</div>
-          <h1 className="mt-1 text-xl font-bold">Gang Loot Splitter</h1>
-          <p className="text-sm text-indigo-200/70">แบ่งของแก็ง คำนวณหารอัตโนมัติ</p>
+          <ViperLogoFull />
+          <h1 className="mt-2 text-xl font-bold">VIPER Loot Splitter</h1>
+          <p className="text-sm text-violet-200/70">แบ่งของแก็ง คำนวณหารอัตโนมัติ</p>
         </div>
 
         {!supabaseConfigured && (

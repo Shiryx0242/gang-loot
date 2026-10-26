@@ -19,10 +19,10 @@ const RANGES: { key: Range; label: string }[] = [
 
 function Stat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: 'bad' }) {
   return (
-    <div className="card">
-      <div className="text-xs text-indigo-200/70">{label}</div>
+    <div className="card tabular-nums">
+      <div className="text-xs text-violet-200/70">{label}</div>
       <div className={`mt-1 text-2xl font-bold ${tone === 'bad' ? 'text-red-300' : ''}`}>{value}</div>
-      {sub && <div className="text-xs text-indigo-200/60">{sub}</div>}
+      {sub && <div className="text-xs text-violet-200/60">{sub}</div>}
     </div>
   );
 }
@@ -141,7 +141,7 @@ export default function DashboardPage() {
       </div>
 
       {error && <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-200">{error}</p>}
-      {loading && <p className="text-sm text-indigo-200/70">กำลังโหลด...</p>}
+      {loading && <p className="text-sm text-violet-200/70">กำลังโหลด...</p>}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="จำนวนรอบ" value={String(stats.rounds)} />
@@ -158,18 +158,18 @@ export default function DashboardPage() {
       <section className="card">
         <h2 className="mb-3 font-medium">มูลค่ารวมรายวัน (14 วันล่าสุดที่มีรอบ)</h2>
         {stats.days.length === 0 ? (
-          <p className="text-sm text-indigo-200/60">ยังไม่มีข้อมูลในช่วงนี้</p>
+          <p className="text-sm text-violet-200/60">ยังไม่มีข้อมูลในช่วงนี้</p>
         ) : (
-          <div className="flex h-44 items-end gap-2">
+          <div className="flex h-44 items-end gap-2 tabular-nums">
             {stats.days.map(([date, value]) => (
               <div key={date} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1">
-                <span className="text-[10px] text-indigo-100">{formatShort(value)}</span>
+                <span className="text-[10px] text-violet-100">{formatShort(value)}</span>
                 <div
-                  className="w-full rounded-t-md bg-gradient-to-t from-indigo-600 to-violet-400"
+                  className="w-full rounded-t-md bg-gradient-to-t from-violet-700 via-purple-500 to-fuchsia-400"
                   style={{ height: `${Math.max(4, (value / stats.maxDay) * 100)}%` }}
                   title={`${formatThaiDate(date)}: ${formatFull(value)}`}
                 />
-                <span className="text-[10px] text-indigo-200/60">{formatThaiDate(date).replace(/ \d+$/, '')}</span>
+                <span className="text-[10px] text-violet-200/60">{formatThaiDate(date).replace(/ \d+$/, '')}</span>
               </div>
             ))}
           </div>
@@ -180,7 +180,7 @@ export default function DashboardPage() {
         <section className="card">
           <h2 className="mb-2 font-medium">อันดับผู้เล่น (ยอดสะสม)</h2>
           {stats.players.length === 0 ? (
-            <p className="text-sm text-indigo-200/60">ยังไม่มีข้อมูล</p>
+            <p className="text-sm text-violet-200/60">ยังไม่มีข้อมูล</p>
           ) : (
             <table className="w-full">
               <thead>
@@ -194,7 +194,7 @@ export default function DashboardPage() {
               </thead>
               <tbody>
                 {stats.players.map((p, i) => (
-                  <tr key={p.name + i} className="border-t border-indigo-300/10">
+                  <tr key={p.name + i} className="border-t border-violet-300/10">
                     <td className="td">{i + 1}</td>
                     <td className="td">{p.name}</td>
                     <td className="td text-right">{p.rounds}</td>
@@ -212,7 +212,7 @@ export default function DashboardPage() {
         <section className="card">
           <h2 className="mb-2 font-medium">ไอเทมมูลค่าสูงสุด</h2>
           {stats.items.length === 0 ? (
-            <p className="text-sm text-indigo-200/60">ยังไม่มีข้อมูล</p>
+            <p className="text-sm text-violet-200/60">ยังไม่มีข้อมูล</p>
           ) : (
             <table className="w-full">
               <thead>
@@ -224,7 +224,7 @@ export default function DashboardPage() {
               </thead>
               <tbody>
                 {stats.items.map((it) => (
-                  <tr key={it.name} className="border-t border-indigo-300/10">
+                  <tr key={it.name} className="border-t border-violet-300/10">
                     <td className="td">{it.name}</td>
                     <td className="td text-right">{it.count}</td>
                     <td className="td text-right">{formatShort(it.value)}</td>
@@ -243,8 +243,8 @@ export default function DashboardPage() {
         ) : (
           <ul className="space-y-2">
             {stats.unpaid.map(({ session, people }) => (
-              <li key={session.id} className="rounded-lg border border-indigo-300/10 p-3">
-                <Link href={`/sessions/${session.id}`} className="text-sm font-medium text-indigo-200 hover:underline">
+              <li key={session.id} className="rounded-lg border border-violet-300/10 p-3">
+                <Link href={`/sessions/${session.id}`} className="text-sm font-medium text-violet-200 hover:underline">
                   {formatThaiDate(session.session_date)} · {session.title || 'รอบแบ่งของ'}
                 </Link>
                 <div className="mt-1 flex flex-wrap gap-1">

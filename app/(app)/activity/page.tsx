@@ -43,24 +43,24 @@ export default function ActivityPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-lg font-bold">กิจกรรมล่าสุดของแก็ง</h1>
-      <p className="text-sm text-indigo-200/70">ใครแก้อะไร เมื่อไหร่ (แสดง 200 รายการล่าสุด)</p>
+      <p className="text-sm text-violet-200/70">ใครแก้อะไร เมื่อไหร่ (แสดง 200 รายการล่าสุด)</p>
       {error && <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-200">{error}</p>}
-      {loading && <p className="text-sm text-indigo-200/70">กำลังโหลด...</p>}
-      {!loading && logs.length === 0 && <p className="card text-sm text-indigo-200/70">ยังไม่มีกิจกรรม</p>}
+      {loading && <p className="text-sm text-violet-200/70">กำลังโหลด...</p>}
+      {!loading && logs.length === 0 && <p className="card text-sm text-violet-200/70">ยังไม่มีกิจกรรม</p>}
       <ul className="space-y-1">
         {logs.map((l) => (
           <li key={l.id} className="card !p-3 text-sm">
             <div className="flex flex-wrap items-center gap-x-2">
-              <span className="text-indigo-200/60">{formatDateTime(l.created_at)}</span>
+              <span className="text-violet-200/60">{formatDateTime(l.created_at)}</span>
               <span className="font-medium">{(l.actor_id && names[l.actor_id]) || 'ใครสักคน'}</span>
               <span>{ACTION_LABELS[l.action] ?? l.action}</span>
               {l.session_id && (
-                <Link href={`/sessions/${l.session_id}`} className="text-indigo-300 hover:underline">
+                <Link href={`/sessions/${l.session_id}`} className="text-violet-300 hover:underline">
                   ดูรอบ
                 </Link>
               )}
             </div>
-            <div className="text-indigo-100/70">{describeLog(l)}</div>
+            <div className="text-violet-100/70">{describeLog(l)}</div>
           </li>
         ))}
       </ul>

@@ -4,14 +4,14 @@ import './globals.css';
 import { GangProvider } from '@/lib/gang-context';
 
 export const metadata: Metadata = {
-  title: 'Gang Loot Splitter',
+  title: 'VIPER Loot Splitter',
   description: 'แบ่งของ/แบ่งเงินแก็ง พร้อมประวัติและ Dashboard',
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#090e2b',
+  themeColor: '#070512',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

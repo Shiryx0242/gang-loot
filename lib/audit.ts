@@ -24,6 +24,10 @@ export const ACTION_LABELS: Record<string, string> = {
   'player.add': 'เพิ่มผู้เล่น',
   'player.update': 'แก้ผู้เล่น',
   'player.delete': 'ลบผู้เล่น',
+  'preset.add': 'เพิ่มไอเทมสำเร็จรูป',
+  'preset.seed': 'นำเข้าไอเทมตั้งต้น',
+  'preset.update': 'แก้ไอเทมสำเร็จรูป',
+  'preset.delete': 'ลบไอเทมสำเร็จรูป',
   'invite.create': 'สร้างรหัสเชิญ',
   'member.role': 'เปลี่ยนสิทธิ์สมาชิก',
   'member.remove': 'ลบสมาชิก',
@@ -61,6 +65,14 @@ export function describeLog(log: AuditLog): string {
     case 'player.update':
     case 'player.delete':
       return str(d.name);
+    case 'preset.add':
+    case 'preset.update':
+    case 'preset.delete': {
+      const price = typeof d.price === 'number' ? ` (${formatShort(d.price)})` : '';
+      return `${str(d.name)}${price}`;
+    }
+    case 'preset.seed':
+      return `${str(d.count)} รายการ`;
     case 'member.role':
       return `${str(d.member)} → ${str(d.role)}`;
     default:

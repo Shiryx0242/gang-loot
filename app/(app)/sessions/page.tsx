@@ -132,8 +132,8 @@ export default function HistoryPage() {
       </section>
 
       {error && <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-200">{error}</p>}
-      {loading && <p className="text-sm text-indigo-200/70">กำลังโหลด...</p>}
-      {!loading && filtered.length === 0 && <p className="card text-sm text-indigo-200/70">ไม่พบรอบที่ตรงเงื่อนไข</p>}
+      {loading && <p className="text-sm text-violet-200/70">กำลังโหลด...</p>}
+      {!loading && filtered.length === 0 && <p className="card text-sm text-violet-200/70">ไม่พบรอบที่ตรงเงื่อนไข</p>}
 
       <ul className="space-y-2">
         {filtered.map((s) => {
@@ -142,10 +142,10 @@ export default function HistoryPage() {
           const paidCount = s.session_players.filter((p) => p.is_paid).length;
           return (
             <li key={s.id}>
-              <Link href={`/sessions/${s.id}`} className="card block transition hover:bg-[#1a2459]/80">
+              <Link href={`/sessions/${s.id}`} className="card block transition hover:bg-[#231954]/85">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-indigo-200/70">{formatThaiDate(s.session_date)}</span>
+                    <span className="text-sm text-violet-200/70">{formatThaiDate(s.session_date)}</span>
                     <span className="font-medium">{s.title || 'รอบแบ่งของ'}</span>
                     <span
                       className={`badge ${
@@ -159,16 +159,16 @@ export default function HistoryPage() {
                       {STATUS_LABELS[s.status]}
                     </span>
                   </div>
-                  <div className="text-right text-sm">
+                  <div className="text-right text-sm tabular-nums">
                     <span className="font-bold">{formatShort(total)}</span>
-                    <span className="text-indigo-200/60"> ({formatFull(total)})</span>
+                    <span className="text-violet-200/60"> ({formatFull(total)})</span>
                     {per !== null && <span className="ml-2 text-emerald-300">คนละ {formatShort(per)}</span>}
                   </div>
                 </div>
-                <div className="mt-1 text-xs text-indigo-200/70">
+                <div className="mt-1 text-xs text-violet-200/70">
                   {s.session_items.map((i) => `${i.name} ${formatShort(i.price)}`).join(' · ') || 'ไม่มีไอเทม'}
                 </div>
-                <div className="mt-1 text-xs text-indigo-200/70">
+                <div className="mt-1 text-xs text-violet-200/70">
                   👥 {s.session_players.map((p) => p.players?.name ?? '?').join(', ') || '-'} · จ่ายแล้ว {paidCount}/
                   {s.session_players.length}
                 </div>

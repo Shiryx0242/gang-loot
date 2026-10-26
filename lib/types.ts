@@ -23,6 +23,26 @@ export interface Player {
   created_at: string;
 }
 
+export interface ItemPreset {
+  id: string;
+  gang_id: string;
+  name: string;
+  default_price: number;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export const DEFAULT_ITEM_PRESETS: { name: string; default_price: number }[] = [
+  { name: 'weapon box', default_price: 50_000 },
+  { name: 'weapon box gang', default_price: 250_000 },
+  { name: 'fairy dusk', default_price: 30_000 },
+  { name: 'upgard part', default_price: 50_000 },
+  { name: 'Bolter', default_price: 10_000 },
+  { name: 'ยาเขียว', default_price: 20_000 },
+  { name: 'Fairy', default_price: 150_000 },
+];
+
 export interface SessionItem {
   id: string;
   session_id: string;

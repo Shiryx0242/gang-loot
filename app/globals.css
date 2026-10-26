@@ -1,12 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #090e2b;
-  --panel: #131b45;
-  --line: rgba(165, 180, 252, 0.18);
-  --text: #e8ecff;
-  --muted: #9aa6d6;
-  --accent: #5b7cff;
+  --bg: #070512;
+  --panel: #1a1340;
+  --line: rgba(167, 139, 250, 0.20);
+  --text: #ece8ff;
+  --muted: #a9a3d6;
+  --accent: #8b5cf6;
+  --accent-soft: #a78bfa;
   --good: #34d399;
   --bad: #f87171;
 }
@@ -19,11 +20,13 @@ body {
 body {
   color: var(--text);
   background:
-    radial-gradient(1200px 600px at 10% -10%, rgba(91, 124, 255, 0.28), transparent 60%),
-    radial-gradient(900px 500px at 100% 0%, rgba(139, 92, 246, 0.22), transparent 60%),
-    var(--bg);
+    radial-gradient(1200px 650px at 15% -10%, rgba(139, 92, 246, 0.35), transparent 60%),
+    radial-gradient(1000px 600px at 95% 5%, rgba(168, 85, 247, 0.25), transparent 60%),
+    radial-gradient(900px 600px at 50% 105%, rgba(124, 58, 237, 0.22), transparent 65%),
+    linear-gradient(180deg, #05030a 0%, #0d0722 50%, #160a38 100%);
   background-attachment: fixed;
   font-family: "Noto Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums;
 }
 
 input,
@@ -35,19 +38,19 @@ button {
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-indigo-300/15 bg-[#131b45]/70 p-4 backdrop-blur;
+    @apply rounded-2xl border border-violet-300/15 bg-[#1a1340]/75 p-4 backdrop-blur;
   }
   .label {
-    @apply mb-1 block text-xs text-indigo-200/70;
+    @apply mb-1 block text-xs text-violet-200/70;
   }
   .input {
-    @apply w-full rounded-lg border border-indigo-300/20 bg-[#0b1233]/80 px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-indigo-400 disabled:opacity-60;
+    @apply w-full rounded-lg border border-violet-300/20 bg-[#0d0826]/85 px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-violet-300/40 focus:border-violet-400 disabled:opacity-60;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-1 rounded-lg border border-indigo-300/20 bg-indigo-400/10 px-3 py-2 text-sm font-medium text-slate-100 transition hover:bg-indigo-400/20 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-1 rounded-lg border border-violet-300/20 bg-violet-400/10 px-3 py-2 text-sm font-medium text-slate-100 transition hover:bg-violet-400/20 disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply border-transparent bg-indigo-500 text-white hover:bg-indigo-400;
+    @apply border-transparent bg-violet-600 text-white hover:bg-violet-500;
   }
   .btn-danger {
     @apply border-red-400/30 bg-red-500/10 text-red-200 hover:bg-red-500/20;
@@ -58,10 +61,19 @@ button {
   .badge {
     @apply inline-block rounded-full px-2 py-0.5 text-xs font-medium;
   }
+  .chip {
+    @apply inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm transition select-none;
+  }
+  .chip-idle {
+    @apply border-violet-300/20 bg-violet-500/5 text-violet-100/80 hover:border-violet-300/40 hover:bg-violet-500/15;
+  }
+  .chip-active {
+    @apply border-violet-400 bg-violet-600/45 text-white shadow-sm shadow-violet-500/25;
+  }
   .th {
-    @apply px-2 py-2 text-left text-xs font-medium text-indigo-200/70;
+    @apply px-2 py-2 text-left text-xs font-medium text-violet-200/70;
   }
   .td {
-    @apply px-2 py-2 text-sm;
+    @apply px-2 py-2 text-sm tabular-nums;
   }
 }
