@@ -12,6 +12,7 @@ const STATUS_TONE: Record<SessionStatus, string> = {
   completed: 'tone-mint',
   open: 'tone-butter',
   draft: 'tone-chip',
+  in_gang: 'tone-lavender',
 };
 
 function csvCell(v: string | number): string {

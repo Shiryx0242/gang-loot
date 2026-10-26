@@ -19,12 +19,14 @@ import {
   type SessionRow,
   type SessionStatus,
 } from '@/lib/types';
+import TitlePicker from '@/components/TitlePicker';
 import { IconCheck, IconCopy, IconGear, IconPlus, IconRefresh, IconSearch, IconX } from '@/components/Icons';
 
 const STATUS_TONE: Record<SessionStatus, string> = {
   completed: 'tone-mint',
   open: 'tone-butter',
   draft: 'tone-chip',
+  in_gang: 'tone-lavender',
 };
 
 interface ItemDraft {
@@ -58,6 +60,7 @@ export default function SessionEditorPage() {
 
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(localDate());
+  const [time, setTime] = useState('');
   const [note, setNote] = useState('');
   const [status, setStatus] = useState<SessionStatus>('open');
   const [items, setItems] = useState<ItemDraft[]>([emptyItem()]);
@@ -89,6 +92,7 @@ export default function SessionEditorPage() {
   const resetForm = useCallback(() => {
     setTitle('');
     setDate(localDate());
+    setTime('');
     setNote('');
     setStatus('open');
     setItems([emptyItem()]);
@@ -149,6 +153,7 @@ export default function SessionEditorPage() {
 
     setTitle(row.title ?? '');
     setDate(row.session_date);
+    setTime(row.session_time?.slice(0, 5) ?? '');
     setNote(row.note ?? '');
     setStatus(row.status);
     setDeletedAt(row.deleted_at);
@@ -532,7 +537,7 @@ export default function SessionEditorPage() {
     setSaving(true);
     try {
       let sid = id;
-      const base = { title: title.trim() || null, session_date: date, status, note: note.trim() || null };
+      const base = { title: title.trim() || null, session_date: date, session_time: time || null, status, note: note.trim() || null };
 
       if (isNew) {
         const { data, error } = await supabase
@@ -771,20 +776,20 @@ export default function SessionEditorPage() {
             }}
           />
         </div>
-        <div className="sm:col-span-2">
-          <label className="label">ชื่อรอบ / หมายเหตุสั้น ๆ</label>
+        <div>
+          <label className="label">เวลา</label>
           <input
             className="input"
-            placeholder="เช่น Battle Force Reward"
-            value={title}
+            type="time"
+            value={time}
             disabled={readOnly}
             onChange={(e) => {
-              setTitle(e.target.value);
+              setTime(e.target.value);
               markDirty();
             }}
           />
         </div>
-        <div>
+        <div className="sm:col-span-2">
           <label className="label">สถานะ</label>
           <select
             className="input"
@@ -801,6 +806,19 @@ export default function SessionEditorPage() {
               </option>
             ))}
           </select>
+        </div>
+        <div className="sm:col-span-4">
+          <label className="label">ชื่อรอบ / หมายเหตุสั้น ๆ</label>
+          <TitlePicker
+            gangId={gangId}
+            value={title}
+            disabled={readOnly}
+            canManage={canEdit}
+            onChange={(v) => {
+              setTitle(v);
+              markDirty();
+            }}
+          />
         </div>
         <div className="sm:col-span-4">
           <label className="label">โน้ต (ถ้ามี)</label>

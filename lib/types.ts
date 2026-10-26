@@ -1,5 +1,5 @@
 export type Role = 'owner' | 'admin' | 'member';
-export type SessionStatus = 'draft' | 'open' | 'completed';
+export type SessionStatus = 'draft' | 'open' | 'completed' | 'in_gang';
 
 export const ROLE_LABELS: Record<Role, string> = {
   owner: 'หัวแก็ง',
@@ -11,6 +11,7 @@ export const STATUS_LABELS: Record<SessionStatus, string> = {
   draft: 'ฉบับร่าง',
   open: 'รอจ่าย',
   completed: 'ครบแล้ว',
+  in_gang: 'เข้าแก็งค์',
 };
 
 export interface Player {
@@ -67,6 +68,7 @@ export interface SessionRow {
   gang_id: string;
   title: string | null;
   session_date: string;
+  session_time: string | null;
   status: SessionStatus;
   note: string | null;
   created_at: string;
