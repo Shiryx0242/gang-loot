@@ -27,6 +27,7 @@ export default function SettingsPage() {
 
   const [gangName, setGangName] = useState(current?.gang.name ?? '');
   const [rounding, setRounding] = useState<RoundingMode>(current?.gang.rounding_mode ?? 'ceil_1000');
+  const [payNumber, setPayNumber] = useState('');
   const [myName, setMyName] = useState(current?.display_name ?? '');
   const [members, setMembers] = useState<Member[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
@@ -64,6 +65,18 @@ export default function SettingsPage() {
     loadInvites();
   }, [current, loadMembers, loadInvites]);
 
+  useEffect(() => {
+    if (!gangId) return;
+    supabase
+      .from('gangs')
+      .select('pay_number')
+      .eq('id', gangId)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!error) setPayNumber(((data as { pay_number: string | null } | null)?.pay_number ?? '').trim());
+      });
+  }, [gangId]);
+
   function flash(text: string) {
     setMsg(text);
     setError(null);
@@ -79,6 +92,16 @@ export default function SettingsPage() {
     logAudit(gangId, null, 'gang.update', { name: gangName.trim(), rounding });
     await reload();
     flash('บันทึกการตั้งค่าแก็งแล้ว');
+  }
+
+  async function savePayNumber() {
+    const { error } = await supabase.rpc('set_gang_pay_number', { p_gang: gangId, p_number: payNumber });
+    if (error) {
+      setError('บันทึกเบอร์ไม่สำเร็จ (ต้องรันไฟล์ schema-patch-3.sql ใน Supabase ก่อน): ' + error.message);
+      return;
+    }
+    logAudit(gangId, null, 'gang.update', { payNumber: payNumber.trim() });
+    flash('บันทึกเบอร์รับเงินแล้ว');
   }
 
   async function saveMyName() {
@@ -178,6 +201,25 @@ export default function SettingsPage() {
           <p className="text-xs muted">เฉพาะหัวแก็งที่แก้การตั้งค่านี้ได้</p>
         )}
       </section>
+
+      {canEdit && (
+        <section className="card space-y-3">
+          <h2 className="text-lg font-semibold">เบอร์รับเงิน</h2>
+          <p className="text-xs muted">แสดงท้ายใบสรุปรอบ (เว้นว่างไว้ = ไม่แสดงกล่องเบอร์)</p>
+          <div className="flex gap-2">
+            <input
+              className="input"
+              inputMode="numeric"
+              value={payNumber}
+              onChange={(e) => setPayNumber(e.target.value)}
+              placeholder="เช่น 180772"
+            />
+            <button className="btn btn-primary" onClick={savePayNumber}>
+              บันทึก
+            </button>
+          </div>
+        </section>
+      )}
 
       <section className="card space-y-2">
         <h2 className="text-lg font-semibold">สมาชิก ({members.length})</h2>

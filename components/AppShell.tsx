@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useGang } from '@/lib/gang-context';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
 import { ROLE_LABELS } from '@/lib/types';
-import { ViperLogoFull, ViperLogoMark } from '@/components/ViperLogo';
+import { LogoBadge } from '@/components/LogoBadge';
 import {
   Decor,
   IconBox,
@@ -88,7 +88,9 @@ function Onboarding() {
     <Centered>
       <div className="w-full space-y-4">
         <div className="text-center">
-          <ViperLogoFull />
+          <div className="mx-auto w-fit">
+            <LogoBadge size={120} />
+          </div>
           <h1 className="mt-5 text-2xl font-bold">ยินดีต้อนรับ</h1>
           <p className="muted text-sm">คุณยังไม่ได้อยู่ในแก็งไหน เลือกอย่างใดอย่างหนึ่ง</p>
         </div>
@@ -177,7 +179,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
       <div className="relative mx-auto max-w-5xl px-3 pb-28 pt-10 sm:px-4 sm:pt-12">
         <header className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[32px] border-[1.5px] border-[var(--line)] bg-white p-4 shadow-[var(--shadow)] sm:p-5">
           <div className="flex min-w-0 items-center gap-4">
-            <ViperLogoMark className="ml-1" />
+            <span className="ml-1 sm:hidden">
+              <LogoBadge size={52} />
+            </span>
+            <span className="ml-1 hidden sm:inline-flex">
+              <LogoBadge size={68} />
+            </span>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 {memberships.length > 1 ? (

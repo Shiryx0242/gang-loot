@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
 import { useGang } from '@/lib/gang-context';
-import { ViperLogoFull } from '@/components/ViperLogo';
+import { LogoBadge } from '@/components/LogoBadge';
 import { Decor } from '@/components/Icons';
 
 export default function LoginPage() {
@@ -65,7 +65,9 @@ export default function LoginPage() {
       <div className="relative mx-auto flex min-h-screen max-w-sm items-center p-4">
       <div className="card w-full space-y-5">
         <div className="text-center">
-          <ViperLogoFull />
+          <div className="mx-auto w-fit drop-shadow-[0_0_24px_rgba(255,143,192,.45)]">
+            <LogoBadge size={140} />
+          </div>
           <h1 className="mt-5 text-2xl font-bold tracking-wide">VIPER Loot Splitter</h1>
           <p className="muted text-sm">แบ่งของแก็ง คำนวณหารอัตโนมัติ</p>
         </div>

@@ -19,6 +19,7 @@ import {
   type SessionRow,
   type SessionStatus,
 } from '@/lib/types';
+import { buildDiscordText as buildDiscord } from '@/lib/discord';
 import TitlePicker from '@/components/TitlePicker';
 import { IconCheck, IconCopy, IconGear, IconPlus, IconRefresh, IconSearch, IconX } from '@/components/Icons';
 
@@ -675,19 +676,11 @@ export default function SessionEditorPage() {
   }
 
   function buildDiscordText(): string {
-    const who = selectedIds
-      .map((pid) => {
-        const p = playerMap[pid];
-        const mark = paid[pid]?.is_paid ? ' ✅' : '';
-        return `@${p?.name ?? '?'}${mark}`;
-      })
-      .join(' ');
-    const lines = validItems.map(
-      (i) => `${i.name}${i.quantity > 1 ? ` x${i.quantity}` : ''} ${formatShort(i.price).toUpperCase()}`,
+    return buildDiscord(
+      selectedIds.map((pid) => ({ name: playerMap[pid]?.name ?? '?', isPaid: Boolean(paid[pid]?.is_paid) })),
+      validItems,
+      split,
     );
-    const totalLabel = split.total >= 1000 && split.total % 1000 === 0 ? String(split.total / 1000) : formatFull(split.total);
-    const per = split.perPerson === null ? '-' : formatShort(split.perPerson);
-    return [who, ...lines, `รวม ${totalLabel} คนละ ${per}`].filter(Boolean).join('\n');
   }
 
   async function copyDiscord() {
@@ -737,6 +730,11 @@ export default function SessionEditorPage() {
             {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
             {copied ? 'คัดลอกแล้ว' : 'คัดลอกข้อความ Discord'}
           </button>
+          {!isNew && (
+            <Link href={`/sessions/${id}/receipt`} className="btn btn-sm">
+              ส่งใบสรุป
+            </Link>
+          )}
           {!isNew && canEdit && (
             <>
               <Link href={`/sessions/new?from=${id}`} className="btn btn-sm">
