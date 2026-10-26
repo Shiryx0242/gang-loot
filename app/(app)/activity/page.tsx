@@ -41,26 +41,26 @@ export default function ActivityPage() {
   }, [gangId]);
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-lg font-bold">กิจกรรมล่าสุดของแก็ง</h1>
-      <p className="text-sm text-violet-200/70">ใครแก้อะไร เมื่อไหร่ (แสดง 200 รายการล่าสุด)</p>
-      {error && <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-200">{error}</p>}
-      {loading && <p className="text-sm text-violet-200/70">กำลังโหลด...</p>}
-      {!loading && logs.length === 0 && <p className="card text-sm text-violet-200/70">ยังไม่มีกิจกรรม</p>}
-      <ul className="space-y-1">
+    <div className="space-y-5">
+      <h1 className="text-2xl font-bold">กิจกรรมล่าสุดของแก็ง</h1>
+      <p className="text-sm muted">ใครแก้อะไร เมื่อไหร่ (แสดง 200 รายการล่าสุด)</p>
+      {error && <p className="alert tone-bad">{error}</p>}
+      {loading && <p className="text-sm muted">กำลังโหลด...</p>}
+      {!loading && logs.length === 0 && <p className="card text-sm muted">ยังไม่มีกิจกรรม</p>}
+      <ul className="space-y-2">
         {logs.map((l) => (
-          <li key={l.id} className="card !p-3 text-sm">
+          <li key={l.id} className="card !rounded-[20px] !px-4 !py-3 text-sm">
             <div className="flex flex-wrap items-center gap-x-2">
-              <span className="text-violet-200/60">{formatDateTime(l.created_at)}</span>
-              <span className="font-medium">{(l.actor_id && names[l.actor_id]) || 'ใครสักคน'}</span>
+              <span className="muted">{formatDateTime(l.created_at)}</span>
+              <span className="font-semibold">{(l.actor_id && names[l.actor_id]) || 'ใครสักคน'}</span>
               <span>{ACTION_LABELS[l.action] ?? l.action}</span>
               {l.session_id && (
-                <Link href={`/sessions/${l.session_id}`} className="text-violet-300 hover:underline">
+                <Link href={`/sessions/${l.session_id}`} className="link">
                   ดูรอบ
                 </Link>
               )}
             </div>
-            <div className="text-violet-100/70">{describeLog(l)}</div>
+            <div className="muted">{describeLog(l)}</div>
           </li>
         ))}
       </ul>

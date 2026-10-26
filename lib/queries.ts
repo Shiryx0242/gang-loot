@@ -17,7 +17,7 @@ export function addDays(date: string, days: number): string {
 
 export function formatThaiDate(date: string): string {
   const [y, m, d] = date.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+  return new Date(y, m - 1, d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 export function formatDateTime(iso: string): string {

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
 import { useGang } from '@/lib/gang-context';
 import { ViperLogoFull } from '@/components/ViperLogo';
+import { Decor } from '@/components/Icons';
 
 export default function LoginPage() {
   const { user, authLoading } = useGang();
@@ -59,21 +60,23 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-sm items-center p-4">
-      <div className="card w-full space-y-4">
+    <div className="relative min-h-screen">
+      <Decor />
+      <div className="relative mx-auto flex min-h-screen max-w-sm items-center p-4">
+      <div className="card w-full space-y-5">
         <div className="text-center">
           <ViperLogoFull />
-          <h1 className="mt-2 text-xl font-bold">VIPER Loot Splitter</h1>
-          <p className="text-sm text-violet-200/70">แบ่งของแก็ง คำนวณหารอัตโนมัติ</p>
+          <h1 className="mt-5 text-2xl font-bold tracking-wide">VIPER Loot Splitter</h1>
+          <p className="muted text-sm">แบ่งของแก็ง คำนวณหารอัตโนมัติ</p>
         </div>
 
         {!supabaseConfigured && (
-          <p className="rounded-lg bg-yellow-500/10 p-3 text-sm text-yellow-200">
+          <p className="alert tone-butter">
             ยังไม่ได้ตั้งค่า <code>.env.local</code> (ดู README)
           </p>
         )}
 
-        <div className="grid grid-cols-2 gap-1">
+        <div className="grid grid-cols-2 gap-2">
           <button className={`btn ${mode === 'magic' ? 'btn-primary' : ''}`} onClick={() => setMode('magic')}>
             ลิงก์ทางอีเมล
           </button>
@@ -120,8 +123,9 @@ export default function LoginPage() {
           </form>
         )}
 
-        {error && <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-200">{error}</p>}
-        {info && <p className="rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-200">{info}</p>}
+        {error && <p className="alert tone-bad">{error}</p>}
+        {info && <p className="alert tone-mint">{info}</p>}
+      </div>
       </div>
     </div>
   );

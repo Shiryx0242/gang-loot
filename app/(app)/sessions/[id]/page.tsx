@@ -19,6 +19,13 @@ import {
   type SessionRow,
   type SessionStatus,
 } from '@/lib/types';
+import { IconCheck, IconCopy, IconGear, IconPlus, IconRefresh, IconSearch, IconX } from '@/components/Icons';
+
+const STATUS_TONE: Record<SessionStatus, string> = {
+  completed: 'tone-mint',
+  open: 'tone-butter',
+  draft: 'tone-chip',
+};
 
 interface ItemDraft {
   key: string;
@@ -696,10 +703,10 @@ export default function SessionEditorPage() {
 
   // ---------- แสดงผล ----------
   if (!current) return null;
-  if (!loaded) return <p className="text-violet-200/70">กำลังโหลด...</p>;
+  if (!loaded) return <p className="muted">กำลังโหลด...</p>;
   if (notFound) {
     return (
-      <div className="card space-y-2">
+      <div className="card space-y-3">
         <p>ไม่พบรอบนี้ หรือคุณไม่มีสิทธิ์ดู</p>
         <Link href="/sessions" className="btn btn-sm">
           กลับไปประวัติ
@@ -713,28 +720,17 @@ export default function SessionEditorPage() {
   const totalActivePlayers = players.filter((p) => p.is_active).length;
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <h1 className="text-lg font-bold">{isNew ? 'สร้างรอบใหม่' : title || 'รอบแบ่งของ'}</h1>
-          {!isNew && (
-            <span
-              className={`badge ${
-                status === 'completed'
-                  ? 'bg-emerald-500/20 text-emerald-200'
-                  : status === 'open'
-                    ? 'bg-amber-500/20 text-amber-200'
-                    : 'bg-slate-500/30 text-slate-200'
-              }`}
-            >
-              {STATUS_LABELS[status]}
-            </span>
-          )}
-          {deletedAt && <span className="badge bg-red-500/20 text-red-200">ถูกลบแล้ว</span>}
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-2xl font-bold">{isNew ? 'สร้างรอบใหม่' : title || 'รอบแบ่งของ'}</h1>
+          {!isNew && <span className={`badge ${STATUS_TONE[status]}`}>{STATUS_LABELS[status]}</span>}
+          {deletedAt && <span className="badge tone-bad">ถูกลบแล้ว</span>}
         </div>
         <div className="flex flex-wrap gap-2">
           <button className="btn btn-sm" onClick={copyDiscord} disabled={selectedIds.length === 0 || validItems.length === 0}>
-            {copied ? '✓ คัดลอกแล้ว' : '📋 คัดลอกข้อความ Discord'}
+            {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+            {copied ? 'คัดลอกแล้ว' : 'คัดลอกข้อความ Discord'}
           </button>
           {!isNew && canEdit && (
             <>
@@ -749,31 +745,19 @@ export default function SessionEditorPage() {
         </div>
       </div>
 
-      {readOnly && <p className="rounded-lg bg-violet-400/10 p-3 text-sm text-violet-100">คุณเป็นสมาชิก ดูได้อย่างเดียว</p>}
+      {readOnly && <p className="alert tone-lavender">คุณเป็นสมาชิก ดูได้อย่างเดียว</p>}
       {remoteChanged && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg bg-amber-500/10 p-3 text-sm text-amber-100">
+        <div className="alert tone-butter flex flex-wrap items-center gap-2">
           มีการแก้ไขรอบนี้จากอีกเครื่อง
           <button className="btn btn-sm" onClick={() => loadSession().then(loadLogs)}>
+            <IconRefresh size={16} />
             โหลดใหม่
           </button>
         </div>
       )}
-      {error && <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-200">{error}</p>}
+      {error && <p className="alert tone-bad">{error}</p>}
 
-      <section className="card grid gap-3 sm:grid-cols-4">
-        <div className="sm:col-span-2">
-          <label className="label">ชื่อรอบ / หมายเหตุสั้น ๆ</label>
-          <input
-            className="input"
-            placeholder="เช่น Battle Force Reward"
-            value={title}
-            disabled={readOnly}
-            onChange={(e) => {
-              setTitle(e.target.value);
-              markDirty();
-            }}
-          />
-        </div>
+      <section className="card grid gap-4 sm:grid-cols-4">
         <div>
           <label className="label">วันที่</label>
           <input
@@ -783,6 +767,19 @@ export default function SessionEditorPage() {
             disabled={readOnly}
             onChange={(e) => {
               setDate(e.target.value);
+              markDirty();
+            }}
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="label">ชื่อรอบ / หมายเหตุสั้น ๆ</label>
+          <input
+            className="input"
+            placeholder="เช่น Battle Force Reward"
+            value={title}
+            disabled={readOnly}
+            onChange={(e) => {
+              setTitle(e.target.value);
               markDirty();
             }}
           />
@@ -820,25 +817,28 @@ export default function SessionEditorPage() {
       </section>
 
       {/* ผู้เข้าร่วม */}
-      <section className="card space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <h2 className="font-medium">ผู้เข้าร่วม ({selectedIds.length} คน)</h2>
+      <section className="card space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-semibold">ผู้เล่น</h2>
+            <span className="badge tone-pink">
+              เลือกแล้ว {selectedIds.length} / {totalActivePlayers}
+            </span>
             {!isNew && selectedIds.length > 0 && (
-              <span className="text-xs text-violet-200/70">
+              <span className="badge tone-mint">
                 จ่ายแล้ว {doneCount}/{Object.keys(paid).length}
               </span>
             )}
           </div>
           {canEdit && players.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 className="btn btn-sm"
                 onClick={selectAllActivePlayers}
                 disabled={totalActivePlayers === 0}
               >
-                เลือกทั้งหมด ({totalActivePlayers})
+                เลือกทั้งหมด
               </button>
               <button
                 type="button"
@@ -846,7 +846,8 @@ export default function SessionEditorPage() {
                 onClick={selectLastSessionTeam}
                 disabled={loadingLastTeam}
               >
-                {loadingLastTeam ? 'กำลังดึง...' : '↺ ใช้ทีมรอบล่าสุด'}
+                <IconRefresh size={16} />
+                {loadingLastTeam ? 'กำลังดึง...' : 'ใช้ทีมรอบล่าสุด'}
               </button>
               <button
                 type="button"
@@ -854,23 +855,27 @@ export default function SessionEditorPage() {
                 onClick={clearSelectedPlayers}
                 disabled={selectedIds.length === 0}
               >
-                ล้างที่เลือก
+                ล้าง
               </button>
             </div>
           )}
         </div>
 
-        {players.filter((p) => p.is_active || selected[p.id]).length > 12 && (
-          <input
-            className="input"
-            placeholder="🔍 ค้นหาชื่อผู้เล่น..."
-            value={playerQuery}
-            onChange={(e) => setPlayerQuery(e.target.value)}
-          />
+        {players.length > 0 && (
+          <div className="relative">
+            <IconSearch size={18} className="muted pointer-events-none absolute left-4 top-1/2 -translate-y-1/2" />
+            <input
+              className="input input-pill !pl-11"
+              placeholder="ค้นหาชื่อผู้เล่น..."
+              aria-label="ค้นหาชื่อผู้เล่น"
+              value={playerQuery}
+              onChange={(e) => setPlayerQuery(e.target.value)}
+            />
+          </div>
         )}
 
         {visiblePlayers.length === 0 && (
-          <p className="text-sm text-violet-200/60">
+          <p className="muted text-sm">
             {playerQuery.trim() ? 'ไม่พบชื่อผู้เล่นที่ค้นหา' : 'ยังไม่มีรายชื่อผู้เล่น เพิ่มชื่อด้านล่างได้เลย'}
           </p>
         )}
@@ -880,10 +885,11 @@ export default function SessionEditorPage() {
               key={p.id}
               type="button"
               disabled={readOnly}
+              aria-pressed={Boolean(selected[p.id])}
               onClick={() => togglePlayer(p.id)}
               className={`chip ${selected[p.id] ? 'chip-active' : 'chip-idle'} ${!p.is_active ? 'opacity-60' : ''}`}
             >
-              {selected[p.id] && <span>✓</span>}
+              {selected[p.id] && <IconCheck size={15} />}
               <span>{p.name}</span>
             </button>
           ))}
@@ -903,113 +909,104 @@ export default function SessionEditorPage() {
                 }
               }}
             />
-            <button type="button" className="btn" onClick={quickAddPlayer} disabled={!newPlayerName.trim()}>
+            <button type="button" className="btn !min-h-12" onClick={quickAddPlayer} disabled={!newPlayerName.trim()}>
               เพิ่ม
             </button>
           </div>
         )}
 
         {selectedIds.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr>
-                  <th className="th">ชื่อ</th>
-                  <th className="th text-right">ยอดต่อคน</th>
-                  <th className="th text-right">สถานะ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedIds.map((pid) => {
-                  const info = paid[pid];
-                  return (
-                    <tr key={pid} className="border-t border-violet-300/10">
-                      <td className="td">{playerMap[pid]?.name}</td>
-                      <td className="td text-right">{split.perPerson === null ? '-' : formatFull(split.perPerson)}</td>
-                      <td className="td text-right">
-                        {info ? (
-                          <button
-                            type="button"
-                            disabled={readOnly}
-                            onClick={() => togglePaid(pid)}
-                            className={`btn btn-sm ${info.is_paid ? 'border-emerald-400/40 bg-emerald-500/20 text-emerald-200' : ''}`}
-                            title={info.paid_at ? formatDateTime(info.paid_at) : ''}
-                          >
-                            {info.is_paid ? '✅ จ่ายแล้ว' : 'ยังไม่จ่าย'}
-                          </button>
-                        ) : (
-                          <span className="text-xs text-violet-200/50">บันทึกก่อนจึงติ๊กได้</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <ul className="space-y-2">
+            {selectedIds.map((pid) => {
+              const info = paid[pid];
+              return (
+                <li key={pid} className="row-soft flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 tabular-nums">
+                  <span className="min-w-0 flex-1 truncate font-medium">{playerMap[pid]?.name}</span>
+                  <span className="text-sm font-semibold">
+                    {split.perPerson === null ? '-' : formatFull(split.perPerson)}
+                  </span>
+                  {info ? (
+                    <button
+                      type="button"
+                      disabled={readOnly}
+                      onClick={() => togglePaid(pid)}
+                      className={`btn btn-sm ${info.is_paid ? 'tone-mint !border-[#9fe0c2]' : 'bg-white'}`}
+                      title={info.paid_at ? formatDateTime(info.paid_at) : ''}
+                    >
+                      {info.is_paid && <IconCheck size={15} />}
+                      {info.is_paid ? 'จ่ายแล้ว' : 'ยังไม่จ่าย'}
+                    </button>
+                  ) : (
+                    <span className="muted text-xs">บันทึกก่อนจึงติ๊กได้</span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         )}
       </section>
 
       {/* ไอเทม */}
-      <section className="card space-y-3">
+      <section className="card space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-medium">ไอเทม</h2>
-          <Link href="/items" className="text-xs text-violet-300 hover:underline">
-            ⚙ จัดการไอเทมสำเร็จรูป
+          <h2 className="text-lg font-semibold">ไอเทม</h2>
+          <Link href="/items" className="link text-sm">
+            <IconGear size={16} />
+            จัดการไอเทมสำเร็จรูป
           </Link>
         </div>
 
         {/* ส่วนเลือกไอเทมสำเร็จรูป (Chips) */}
         {canEdit && (
-          <div className="space-y-2 rounded-xl border border-white/10 bg-[#07070b] p-3">
+          <div className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs text-violet-200/80">
-                เลือกไอเทมด่วน (คลิกเพื่อเพิ่ม / คลิกซ้ำเพื่อ +1 / คลิกขวาเพื่อลด)
-              </span>
+              <span className="muted text-sm">กดเพื่อเพิ่ม · กดซ้ำ = +1 · คลิกขวาเพื่อลด</span>
               {presets.filter((p) => p.is_active).length === 0 && (
                 <button type="button" className="btn btn-primary btn-sm" onClick={seedPresetsQuick}>
-                  📥 นำเข้ารายการตั้งต้น (7 รายการ)
+                  นำเข้ารายการตั้งต้น (7 รายการ)
                 </button>
               )}
             </div>
 
             {presets.filter((p) => p.is_active).length > 12 && (
-              <input
-                className="input"
-                placeholder="🔍 ค้นหาไอเทมสำเร็จรูป..."
-                value={presetQuery}
-                onChange={(e) => setPresetQuery(e.target.value)}
-              />
-            )}
-
-            {activePresets.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {activePresets.map((preset) => {
-                  const count = qtyByPresetName[preset.name.trim().toLowerCase()] ?? 0;
-                  return (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      onClick={() => handlePresetClick(preset)}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        handlePresetDecrement(preset);
-                      }}
-                      className={`chip ${count > 0 ? 'chip-active' : 'chip-idle'}`}
-                      title="คลิกซ้าย = เพิ่มจำนวน (+1) | คลิกขวา = ลดจำนวน (-1)"
-                    >
-                      <span className="font-medium">{preset.name}</span>
-                      <span className="text-xs opacity-80">· {formatShort(preset.default_price)}</span>
-                      {count > 0 && (
-                        <span className="ml-0.5 rounded-full bg-white/20 px-1.5 py-0.5 text-xs font-bold">
-                          ×{count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+              <div className="relative">
+                <IconSearch size={18} className="muted pointer-events-none absolute left-4 top-1/2 -translate-y-1/2" />
+                <input
+                  className="input input-pill !pl-11"
+                  placeholder="ค้นหาไอเทมสำเร็จรูป..."
+                  aria-label="ค้นหาไอเทมสำเร็จรูป"
+                  value={presetQuery}
+                  onChange={(e) => setPresetQuery(e.target.value)}
+                />
               </div>
             )}
+
+            <div className="flex flex-wrap gap-2">
+              {activePresets.map((preset) => {
+                const count = qtyByPresetName[preset.name.trim().toLowerCase()] ?? 0;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => handlePresetClick(preset)}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      handlePresetDecrement(preset);
+                    }}
+                    className={`chip ${count > 0 ? 'chip-active !pr-2' : 'chip-idle'}`}
+                    title="คลิกซ้าย = เพิ่มจำนวน (+1) | คลิกขวา = ลดจำนวน (-1)"
+                  >
+                    <span className="font-medium">{preset.name}</span>
+                    <span className="text-sm opacity-80">· {formatShort(preset.default_price)}</span>
+                    {count > 0 && <span className="chip-count">×{count}</span>}
+                  </button>
+                );
+              })}
+              <button type="button" className="chip btn-dashed" onClick={addItem}>
+                <IconPlus size={16} />
+                ไอเทมใหม่
+              </button>
+            </div>
           </div>
         )}
 
@@ -1023,35 +1020,44 @@ export default function SessionEditorPage() {
             const canSaveAsPreset = canEdit && Boolean(p.name) && p.price !== null && !matchedPreset;
 
             return (
-              <div key={it.key} className="rounded-xl border border-white/10 bg-[#07070b] p-2.5">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <input
-                    className="input sm:flex-1"
-                    placeholder="ชื่อไอเทม เช่น weapon box"
-                    value={it.name}
-                    disabled={readOnly}
-                    onChange={(e) => updateItem(it.key, { name: e.target.value })}
-                  />
-                  <div className="flex items-center gap-2">
+              <div key={it.key} className="row-soft p-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">
                     <input
-                      className={`input !w-28 sm:!w-32 ${badPrice ? '!border-red-400' : ''}`}
-                      placeholder="ราคา 50k"
-                      inputMode="text"
-                      value={it.priceText}
+                      className="input bg-white sm:flex-1"
+                      placeholder="ชื่อไอเทม เช่น weapon box"
+                      aria-label="ชื่อไอเทม"
+                      value={it.name}
                       disabled={readOnly}
-                      onChange={(e) => updateItem(it.key, { priceText: e.target.value })}
+                      onChange={(e) => updateItem(it.key, { name: e.target.value })}
                     />
-                    <span className="text-sm text-violet-200/60">×</span>
-                    <input
-                      className="input !w-16 text-center"
-                      inputMode="numeric"
-                      value={it.qty}
-                      disabled={readOnly}
-                      onChange={(e) => updateItem(it.key, { qty: e.target.value.replace(/[^\d]/g, '') })}
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        className={`input !w-24 bg-white sm:!w-32 ${badPrice ? '!border-[var(--t-bad-ink)]' : ''}`}
+                        placeholder="ราคา 50k"
+                        aria-label="ราคา"
+                        inputMode="text"
+                        value={it.priceText}
+                        disabled={readOnly}
+                        onChange={(e) => updateItem(it.key, { priceText: e.target.value })}
+                      />
+                      <label className="badge tone-lavender !gap-0 !py-0 !pr-1 focus-within:ring-2 focus-within:ring-[var(--btn-line)]">
+                        <span aria-hidden="true">×</span>
+                        <input
+                          className="h-11 w-9 bg-transparent text-center font-semibold outline-none"
+                          inputMode="numeric"
+                          aria-label="จำนวน"
+                          value={it.qty}
+                          disabled={readOnly}
+                          onChange={(e) => updateItem(it.key, { qty: e.target.value.replace(/[^\d]/g, '') })}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center sm:gap-3">
                     <span
-                      className={`ml-auto min-w-[6.5rem] text-right text-sm font-medium tabular-nums ${
-                        badPrice ? 'text-red-300' : 'text-violet-100'
+                      className={`text-right text-sm font-semibold tabular-nums sm:min-w-[6.5rem] ${
+                        badPrice ? 'text-[var(--t-bad-ink)]' : ''
                       }`}
                     >
                       {badPrice ? 'ราคาไม่ถูกต้อง' : p.price !== null ? `= ${formatFull(p.price * p.quantity)}` : ''}
@@ -1059,11 +1065,12 @@ export default function SessionEditorPage() {
                     {canEdit && (
                       <button
                         type="button"
-                        className="btn btn-danger btn-sm"
+                        className="btn btn-danger btn-icon"
                         onClick={() => removeItem(it.key)}
+                        aria-label={`ลบ ${it.name || 'แถวนี้'}`}
                         title="ลบแถว"
                       >
-                        ✕
+                        <IconX size={18} />
                       </button>
                     )}
                   </div>
@@ -1071,16 +1078,16 @@ export default function SessionEditorPage() {
 
                 {/* แจ้งเตือนราคาต่างจากมาตรฐาน หรือปุ่มบันทึกเป็นรายการมาตรฐาน */}
                 {(priceDiffers || canSaveAsPreset) && (
-                  <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 text-sm">
                     {priceDiffers && matchedPreset && p.price !== null && (
                       <>
-                        <span className="text-amber-300/90">
+                        <span className="text-[var(--t-butter-ink)]">
                           ต่างจากราคามาตรฐาน ({formatShort(matchedPreset.default_price)})
                         </span>
                         {canEdit && (
                           <button
                             type="button"
-                            className="text-violet-300 underline hover:text-violet-100"
+                            className="link underline"
                             onClick={() => updatePresetDefaultPrice(matchedPreset, p.price!)}
                           >
                             ตั้ง {formatShort(p.price)} เป็นราคามาตรฐาน
@@ -1091,7 +1098,7 @@ export default function SessionEditorPage() {
                     {canSaveAsPreset && p.price !== null && (
                       <button
                         type="button"
-                        className="text-violet-300 underline hover:text-violet-100"
+                        className="link underline"
                         onClick={() => saveRowAsPreset(p.name, p.price!)}
                       >
                         + บันทึก &quot;{p.name}&quot; ({formatShort(p.price)}) ไว้ใช้ครั้งต่อไป
@@ -1103,26 +1110,21 @@ export default function SessionEditorPage() {
             );
           })}
         </div>
-        {canEdit && (
-          <button type="button" className="btn" onClick={addItem}>
-            + ไอเทมอื่น
-          </button>
-        )}
       </section>
 
       {!isNew && (
         <section className="card">
-          <h2 className="mb-2 font-medium">ประวัติการแก้ไขของรอบนี้</h2>
+          <h2 className="mb-3 text-lg font-semibold">ประวัติการแก้ไขของรอบนี้</h2>
           {logs.length === 0 ? (
-            <p className="text-sm text-violet-200/60">ยังไม่มีบันทึก</p>
+            <p className="muted text-sm">ยังไม่มีบันทึก</p>
           ) : (
             <ul className="space-y-1 text-sm">
               {logs.map((l) => (
-                <li key={l.id} className="flex flex-wrap gap-x-2 border-t border-violet-300/10 pt-1">
-                  <span className="text-violet-200/60">{formatDateTime(l.created_at)}</span>
-                  <span className="font-medium">{(l.actor_id && names[l.actor_id]) || 'ใครสักคน'}</span>
+                <li key={l.id} className="divider flex flex-wrap gap-x-2 pt-1.5">
+                  <span className="muted">{formatDateTime(l.created_at)}</span>
+                  <span className="font-semibold">{(l.actor_id && names[l.actor_id]) || 'ใครสักคน'}</span>
                   <span>{ACTION_LABELS[l.action] ?? l.action}</span>
-                  <span className="text-violet-100/70">{describeLog(l)}</span>
+                  <span className="muted">{describeLog(l)}</span>
                 </li>
               ))}
             </ul>
@@ -1130,26 +1132,27 @@ export default function SessionEditorPage() {
         </section>
       )}
 
+      {/* เว้นที่ให้แถบสรุปด้านล่าง */}
+      <div aria-hidden="true" className="h-24 sm:h-12" />
+
       {/* แถบสรุปติดด้านล่าง */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-white/15 bg-black/95 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 tabular-nums">
-            <span className="text-sm text-violet-200/70">รวม</span>
-            <span className="text-lg font-bold">{formatFull(split.total)}</span>
-            <span className="text-sm text-violet-200/70">÷ {selectedIds.length || '-'} =</span>
-            <span className="text-xl font-bold text-emerald-300">
-              {split.perPerson === null ? '-' : `${formatShort(split.perPerson)} (${formatFull(split.perPerson)})`}
-            </span>
-            <span className="text-sm text-violet-200/70">ต่อคน</span>
-            {split.overage !== null && split.overage > 0 && (
-              <span className="text-xs text-amber-200">ส่วนเกินจากการปัด {formatFull(split.overage)}</span>
-            )}
-            {split.overage !== null && split.overage < 0 && (
-              <span className="text-xs text-amber-200">ขาดจากการปัด {formatFull(-split.overage)}</span>
-            )}
+      <div className="fixed inset-x-0 bottom-0 z-20 px-3 pb-3 sm:px-4">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 rounded-[28px] border-[1.5px] border-[#f5dd85] bg-[var(--t-butter)] px-5 py-4 text-[var(--t-butter-ink)] shadow-[var(--shadow)]">
+          <div className="min-w-0 tabular-nums">
+            <div className="text-[22px] font-bold leading-tight sm:text-[30px]">
+              รวม {formatShort(split.total)} ÷ {selectedIds.length || '-'} = คนละ{' '}
+              {split.perPerson === null ? '-' : formatShort(split.perPerson)}
+            </div>
+            <div className="text-sm">
+              {split.perPerson !== null && split.overage !== null && split.overage > 0
+                ? `ยอดจริง ${formatFull(split.total)} · ปัดขึ้นเป็นคนละ ${formatFull(split.perPerson)} เก็บเกิน ${formatFull(split.overage)}`
+                : split.perPerson !== null && split.overage !== null && split.overage < 0
+                  ? `ยอดจริง ${formatFull(split.total)} · ปัดเป็นคนละ ${formatFull(split.perPerson)} ขาด ${formatFull(-split.overage)}`
+                  : `ยอดจริง ${formatFull(split.total)}${split.perPerson !== null ? ` · คนละ ${formatFull(split.perPerson)} พอดี` : ''}`}
+            </div>
           </div>
           {canEdit && (
-            <button className="btn btn-primary" onClick={save} disabled={saving || (!isNew && !dirty)}>
+            <button className="btn btn-primary !min-h-12 px-6" onClick={save} disabled={saving || (!isNew && !dirty)}>
               {saving ? 'กำลังบันทึก...' : isNew ? 'บันทึกรอบ' : dirty ? 'บันทึกการแก้ไข' : 'บันทึกแล้ว'}
             </button>
           )}

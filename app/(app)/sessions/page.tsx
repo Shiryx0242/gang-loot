@@ -6,6 +6,13 @@ import { useGang } from '@/lib/gang-context';
 import { fetchSessions, formatThaiDate, sessionTotal, shareOf } from '@/lib/queries';
 import { formatFull, formatShort, perPersonOf } from '@/lib/money';
 import { STATUS_LABELS, type SessionFull, type SessionStatus } from '@/lib/types';
+import { IconDownload, IconPlus, IconUsers } from '@/components/Icons';
+
+const STATUS_TONE: Record<SessionStatus, string> = {
+  completed: 'tone-mint',
+  open: 'tone-butter',
+  draft: 'tone-chip',
+};
 
 function csvCell(v: string | number): string {
   const s = String(v);
@@ -86,22 +93,24 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-lg font-bold">ประวัติรอบแบ่งของ</h1>
+        <h1 className="text-2xl font-bold">ประวัติรอบแบ่งของ</h1>
         <div className="flex gap-2">
           <button className="btn btn-sm" onClick={exportCsv} disabled={filtered.length === 0}>
-            ⬇ Export CSV
+            <IconDownload size={16} />
+            Export CSV
           </button>
           {canEdit && (
             <Link href="/sessions/new" className="btn btn-sm btn-primary">
-              + สร้างรอบ
+              <IconPlus size={16} />
+              สร้างรอบ
             </Link>
           )}
         </div>
       </div>
 
-      <section className="card grid gap-3 sm:grid-cols-5">
+      <section className="card grid gap-4 sm:grid-cols-5">
         <div>
           <label className="label">ตั้งแต่วันที่</label>
           <input className="input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
@@ -131,9 +140,9 @@ export default function HistoryPage() {
         </div>
       </section>
 
-      {error && <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-200">{error}</p>}
-      {loading && <p className="text-sm text-violet-200/70">กำลังโหลด...</p>}
-      {!loading && filtered.length === 0 && <p className="card text-sm text-violet-200/70">ไม่พบรอบที่ตรงเงื่อนไข</p>}
+      {error && <p className="alert tone-bad">{error}</p>}
+      {loading && <p className="text-sm muted">กำลังโหลด...</p>}
+      {!loading && filtered.length === 0 && <p className="card text-sm muted">ไม่พบรอบที่ตรงเงื่อนไข</p>}
 
       <ul className="space-y-2">
         {filtered.map((s) => {
@@ -142,35 +151,28 @@ export default function HistoryPage() {
           const paidCount = s.session_players.filter((p) => p.is_paid).length;
           return (
             <li key={s.id}>
-              <Link href={`/sessions/${s.id}`} className="card block transition hover:bg-[#161620]">
+              <Link href={`/sessions/${s.id}`} className="card block !p-5 transition hover:border-[var(--btn-line)]">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-violet-200/70">{formatThaiDate(s.session_date)}</span>
-                    <span className="font-medium">{s.title || 'รอบแบ่งของ'}</span>
-                    <span
-                      className={`badge ${
-                        s.status === 'completed'
-                          ? 'bg-emerald-500/20 text-emerald-200'
-                          : s.status === 'open'
-                            ? 'bg-amber-500/20 text-amber-200'
-                            : 'bg-slate-500/30 text-slate-200'
-                      }`}
-                    >
-                      {STATUS_LABELS[s.status]}
-                    </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="muted text-sm">{formatThaiDate(s.session_date)}</span>
+                    <span className="font-semibold">{s.title || 'รอบแบ่งของ'}</span>
+                    <span className={`badge ${STATUS_TONE[s.status]}`}>{STATUS_LABELS[s.status]}</span>
                   </div>
                   <div className="text-right text-sm tabular-nums">
                     <span className="font-bold">{formatShort(total)}</span>
-                    <span className="text-violet-200/60"> ({formatFull(total)})</span>
-                    {per !== null && <span className="ml-2 text-emerald-300">คนละ {formatShort(per)}</span>}
+                    <span className="muted"> ({formatFull(total)})</span>
+                    {per !== null && <span className="badge tone-pink ml-2">คนละ {formatShort(per)}</span>}
                   </div>
                 </div>
-                <div className="mt-1 text-xs text-violet-200/70">
-                  {s.session_items.map((i) => `${i.name} ${formatShort(i.price)}`).join(' · ') || 'ไม่มีไอเทม'}
+                <div className="mt-2 text-sm">
+                  {s.session_items.map((i) => `${i.name} ×${i.quantity} (${formatShort(i.price)})`).join(' · ') || 'ไม่มีไอเทม'}
                 </div>
-                <div className="mt-1 text-xs text-violet-200/70">
-                  👥 {s.session_players.map((p) => p.players?.name ?? '?').join(', ') || '-'} · จ่ายแล้ว {paidCount}/
+                <div className="muted mt-1 flex items-start gap-1.5 text-sm">
+                  <IconUsers size={16} className="mt-0.5 shrink-0" />
+                  <span>
+                  {s.session_players.map((p) => p.players?.name ?? '?').join(', ') || '-'} · จ่ายแล้ว {paidCount}/
                   {s.session_players.length}
+                  </span>
                 </div>
               </Link>
             </li>

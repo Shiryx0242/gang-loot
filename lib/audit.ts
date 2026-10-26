@@ -58,7 +58,7 @@ export function describeLog(log: AuditLog): string {
         .join(' · ');
     }
     case 'paid.toggle':
-      return `${str(d.player)} → ${d.paid ? '✅ จ่ายแล้ว' : 'ยังไม่จ่าย'}`;
+      return `${str(d.player)} → ${d.paid ? 'จ่ายแล้ว' : 'ยังไม่จ่าย'}`;
     case 'session.delete':
       return str(d.title);
     case 'player.add':

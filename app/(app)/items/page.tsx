@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { formatFull, formatShort, parseMoney } from '@/lib/money';
 import { fetchItemPresets, writeLocalPresets } from '@/lib/queries';
 import { logAudit } from '@/lib/audit';
+import { IconArrowDown, IconArrowUp } from '@/components/Icons';
 import { DEFAULT_ITEM_PRESETS, type ItemPreset } from '@/lib/types';
 
 export default function ItemsPage() {
@@ -224,33 +225,33 @@ export default function ItemsPage() {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="text-lg font-bold">ไอเทมสำเร็จรูป</h1>
-          <p className="text-xs text-violet-200/70">
+          <h1 className="text-2xl font-bold">ไอเทมสำเร็จรูป</h1>
+          <p className="text-xs muted">
             ตั้งรายการไอเทมที่ใช้บ่อยพร้อมราคามาตรฐาน เพื่อให้คลิกเลือกเป็น chip ในหน้าสร้าง/แก้ไขรอบได้ทันที (การแก้หรือลบที่นี่ไม่กระทบรอบเก่า)
           </p>
         </div>
         {canEdit && !allSeeded && (
           <button type="button" className="btn btn-sm" onClick={seedDefaults} disabled={seeding}>
-            {seeding ? 'กำลังนำเข้า...' : '📥 นำเข้ารายการตั้งต้น (7 รายการ)'}
+            {seeding ? 'กำลังนำเข้า...' : 'นำเข้ารายการตั้งต้น (7 รายการ)'}
           </button>
         )}
       </div>
 
       {tableMissing && (
-        <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+        <div className="alert tone-butter">
           หมายเหตุ: ฐานข้อมูล Supabase ยังไม่ได้รันตาราง <code>item_presets</code> (ตอนนี้เก็บไว้ในเบราว์เซอร์เครื่องนี้ชั่วคราว) — ให้รันไฟล์{' '}
           <code>schema-patch.sql</code> ใน Supabase SQL Editor เพื่อซิงก์ข้ามเครื่องแบบ real-time
         </div>
       )}
 
-      {msg && <p className="rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-200">{msg}</p>}
-      {error && <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-200">{error}</p>}
+      {msg && <p className="alert tone-mint">{msg}</p>}
+      {error && <p className="alert tone-bad">{error}</p>}
 
       {canEdit && (
-        <form onSubmit={add} className="card grid gap-3 sm:grid-cols-3">
+        <form onSubmit={add} className="card grid gap-4 sm:grid-cols-3">
           <div>
             <label className="label">ชื่อไอเทม *</label>
             <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="เช่น Fairy" />
@@ -272,19 +273,19 @@ export default function ItemsPage() {
         </form>
       )}
 
-      <label className="flex items-center gap-2 text-sm text-violet-100/80">
+      <label className="flex items-center gap-2 text-sm muted">
         <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
         แสดงไอเทมที่ปิดการใช้งานด้วย
       </label>
 
-      {loading && <p className="text-sm text-violet-200/70">กำลังโหลด...</p>}
+      {loading && <p className="text-sm muted">กำลังโหลด...</p>}
 
       {!loading && shown.length === 0 && (
-        <div className="card flex flex-wrap items-center justify-between gap-2 text-sm text-violet-200/70">
+        <div className="card flex flex-wrap items-center justify-between gap-2 text-sm muted">
           <span>ยังไม่มีไอเทมสำเร็จรูป กดนำเข้ารายการตั้งต้นเพื่อเริ่มต้นใช้งาน</span>
           {canEdit && (
             <button type="button" className="btn btn-primary btn-sm" onClick={seedDefaults} disabled={seeding}>
-              📥 นำเข้ารายการตั้งต้น
+              นำเข้ารายการตั้งต้น
             </button>
           )}
         </div>
@@ -316,30 +317,32 @@ export default function ItemsPage() {
               ) : (
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">{p.name}</span>
-                    <span className="badge bg-violet-500/25 text-violet-100">{formatShort(p.default_price)}</span>
-                    <span className="text-xs text-violet-200/60">({formatFull(p.default_price)})</span>
-                    {!p.is_active && <span className="badge bg-slate-500/30 text-slate-200">ปิดใช้งาน</span>}
+                    <span className="font-semibold">{p.name}</span>
+                    <span className="badge tone-sky">{formatShort(p.default_price)}</span>
+                    <span className="text-xs muted">({formatFull(p.default_price)})</span>
+                    {!p.is_active && <span className="badge tone-chip">ปิดใช้งาน</span>}
                   </div>
                   {canEdit && (
                     <div className="flex flex-wrap gap-1">
                       <button
                         type="button"
-                        className="btn btn-sm"
+                        className="btn btn-sm btn-icon"
                         disabled={fullIdx <= 0}
                         onClick={() => moveOrder(fullIdx, -1)}
                         title="เลื่อนขึ้น"
+                        aria-label="เลื่อนขึ้น"
                       >
-                        ↑
+                        <IconArrowUp size={16} />
                       </button>
                       <button
                         type="button"
-                        className="btn btn-sm"
+                        className="btn btn-sm btn-icon"
                         disabled={fullIdx < 0 || fullIdx >= presets.length - 1}
                         onClick={() => moveOrder(fullIdx, 1)}
                         title="เลื่อนลง"
+                        aria-label="เลื่อนลง"
                       >
-                        ↓
+                        <IconArrowDown size={16} />
                       </button>
                       <button
                         type="button"

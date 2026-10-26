@@ -133,14 +133,14 @@ export default function SettingsPage() {
   if (!current) return null;
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-lg font-bold">ตั้งค่า</h1>
-      {msg && <p className="rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-200">{msg}</p>}
-      {error && <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-200">{error}</p>}
+    <div className="space-y-5">
+      <h1 className="text-2xl font-bold">ตั้งค่า</h1>
+      {msg && <p className="alert tone-mint">{msg}</p>}
+      {error && <p className="alert tone-bad">{error}</p>}
 
       <section className="card space-y-3">
-        <h2 className="font-medium">ชื่อของฉัน</h2>
-        <p className="text-xs text-violet-200/60">ใช้แสดงในประวัติการแก้ไข เพื่อให้รู้ว่าใครเป็นคนทำ</p>
+        <h2 className="text-lg font-semibold">ชื่อของฉัน</h2>
+        <p className="text-xs muted">ใช้แสดงในประวัติการแก้ไข เพื่อให้รู้ว่าใครเป็นคนทำ</p>
         <div className="flex gap-2">
           <input className="input" value={myName} onChange={(e) => setMyName(e.target.value)} placeholder="เช่น หัวแก็ง Nanzy" />
           <button className="btn btn-primary" onClick={saveMyName}>
@@ -150,7 +150,7 @@ export default function SettingsPage() {
       </section>
 
       <section className="card space-y-3">
-        <h2 className="font-medium">แก็ง</h2>
+        <h2 className="text-lg font-semibold">แก็ง</h2>
         <div>
           <label className="label">ชื่อแก็ง</label>
           <input className="input" value={gangName} disabled={!isOwner} onChange={(e) => setGangName(e.target.value)} />
@@ -175,21 +175,21 @@ export default function SettingsPage() {
             บันทึกการตั้งค่าแก็ง
           </button>
         ) : (
-          <p className="text-xs text-violet-200/60">เฉพาะหัวแก็งที่แก้การตั้งค่านี้ได้</p>
+          <p className="text-xs muted">เฉพาะหัวแก็งที่แก้การตั้งค่านี้ได้</p>
         )}
       </section>
 
       <section className="card space-y-2">
-        <h2 className="font-medium">สมาชิก ({members.length})</h2>
+        <h2 className="text-lg font-semibold">สมาชิก ({members.length})</h2>
         <ul className="space-y-2">
           {members.map((m) => {
             const isMe = m.user_id === user?.id;
             return (
-              <li key={m.user_id} className="flex flex-wrap items-center justify-between gap-2 border-t border-violet-300/10 pt-2">
+              <li key={m.user_id} className="flex flex-wrap items-center justify-between gap-2 divider pt-2">
                 <div>
-                  <span className="font-medium">{m.display_name || `สมาชิก ${m.user_id.slice(0, 4)}`}</span>
-                  {isMe && <span className="badge ml-2 bg-violet-400/20 text-violet-100">คุณ</span>}
-                  <div className="text-xs text-violet-200/60">เข้าร่วม {formatDateTime(m.joined_at)}</div>
+                  <span className="font-semibold">{m.display_name || `สมาชิก ${m.user_id.slice(0, 4)}`}</span>
+                  {isMe && <span className="badge tone-lavender ml-2">คุณ</span>}
+                  <div className="text-xs muted">เข้าร่วม {formatDateTime(m.joined_at)}</div>
                 </div>
                 <div className="flex items-center gap-2">
                   {isOwner && m.role !== 'owner' ? (
@@ -203,7 +203,7 @@ export default function SettingsPage() {
                       </button>
                     </>
                   ) : (
-                    <span className="badge bg-violet-400/20 text-violet-100">{ROLE_LABELS[m.role]}</span>
+                    <span className="badge tone-lavender">{ROLE_LABELS[m.role]}</span>
                   )}
                 </div>
               </li>
@@ -214,8 +214,8 @@ export default function SettingsPage() {
 
       {canEdit && (
         <section className="card space-y-3">
-          <h2 className="font-medium">เชิญสมาชิก</h2>
-          <p className="text-xs text-violet-200/60">รหัสเชิญใช้ได้ 7 วัน ส่งลิงก์ให้รองแก็งหรือสมาชิก แล้วให้เขาล็อกอินตามลิงก์</p>
+          <h2 className="text-lg font-semibold">เชิญสมาชิก</h2>
+          <p className="text-xs muted">รหัสเชิญใช้ได้ 7 วัน ส่งลิงก์ให้รองแก็งหรือสมาชิก แล้วให้เขาล็อกอินตามลิงก์</p>
           <div className="flex flex-wrap gap-2">
             <select className="input !w-auto" value={inviteRole} onChange={(e) => setInviteRole(e.target.value as 'admin' | 'member')}>
               <option value="admin">เชิญเป็นรองแก็ง (แก้ไขได้)</option>
@@ -227,15 +227,15 @@ export default function SettingsPage() {
           </div>
           <ul className="space-y-2">
             {invites.map((i) => (
-              <li key={i.code} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-violet-300/10 p-2 text-sm">
+              <li key={i.code} className="row-soft flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
                 <div>
-                  <code className="text-violet-100">{i.code}</code>
-                  <span className="badge ml-2 bg-violet-400/20 text-violet-100">{ROLE_LABELS[i.role]}</span>
-                  <div className="text-xs text-violet-200/60">หมดอายุ {formatDateTime(i.expires_at)}</div>
+                  <code className="font-semibold">{i.code}</code>
+                  <span className="badge tone-lavender ml-2">{ROLE_LABELS[i.role]}</span>
+                  <div className="text-xs muted">หมดอายุ {formatDateTime(i.expires_at)}</div>
                 </div>
                 <div className="flex gap-1">
                   <button className="btn btn-sm" onClick={() => copyLink(i.code)}>
-                    {copiedCode === i.code ? '✓ คัดลอกแล้ว' : 'คัดลอกลิงก์'}
+                    {copiedCode === i.code ? 'คัดลอกแล้ว' : 'คัดลอกลิงก์'}
                   </button>
                   <button className="btn btn-sm btn-danger" onClick={() => deleteInvite(i.code)}>
                     ลบ
@@ -243,7 +243,7 @@ export default function SettingsPage() {
                 </div>
               </li>
             ))}
-            {invites.length === 0 && <li className="text-sm text-violet-200/60">ยังไม่มีรหัสเชิญที่ใช้งานได้</li>}
+            {invites.length === 0 && <li className="text-sm muted">ยังไม่มีรหัสเชิญที่ใช้งานได้</li>}
           </ul>
         </section>
       )}

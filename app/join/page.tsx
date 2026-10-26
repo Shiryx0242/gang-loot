@@ -24,7 +24,7 @@ export default function JoinPage() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-sm items-center justify-center p-4 text-center">
-      <p className="text-violet-200/80">{msg}</p>
+      <p className="card muted">{msg}</p>
     </div>
   );
 }
