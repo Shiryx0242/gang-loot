@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #070512;
-  --panel: #1a1340;
-  --line: rgba(167, 139, 250, 0.20);
+  --bg: #000000;
+  --panel: #0d0d12;
+  --line: rgba(167, 139, 250, 0.18);
   --text: #ece8ff;
   --muted: #a9a3d6;
   --accent: #8b5cf6;
@@ -19,12 +19,7 @@ body {
 
 body {
   color: var(--text);
-  background:
-    radial-gradient(1200px 650px at 15% -10%, rgba(139, 92, 246, 0.35), transparent 60%),
-    radial-gradient(1000px 600px at 95% 5%, rgba(168, 85, 247, 0.25), transparent 60%),
-    radial-gradient(900px 600px at 50% 105%, rgba(124, 58, 237, 0.22), transparent 65%),
-    linear-gradient(180deg, #05030a 0%, #0d0722 50%, #160a38 100%);
-  background-attachment: fixed;
+  background: #000000;
   font-family: "Noto Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
   font-variant-numeric: tabular-nums;
 }
@@ -38,16 +33,16 @@ button {
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-violet-300/15 bg-[#1a1340]/75 p-4 backdrop-blur;
+    @apply rounded-2xl border border-white/10 bg-[#0d0d12] p-4;
   }
   .label {
     @apply mb-1 block text-xs text-violet-200/70;
   }
   .input {
-    @apply w-full rounded-lg border border-violet-300/20 bg-[#0d0826]/85 px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-violet-300/40 focus:border-violet-400 disabled:opacity-60;
+    @apply w-full rounded-lg border border-white/15 bg-[#050508] px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-violet-400 disabled:opacity-60;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-1 rounded-lg border border-violet-300/20 bg-violet-400/10 px-3 py-2 text-sm font-medium text-slate-100 transition hover:bg-violet-400/20 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-1 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm font-medium text-slate-100 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
     @apply border-transparent bg-violet-600 text-white hover:bg-violet-500;
@@ -65,7 +60,7 @@ button {
     @apply inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm transition select-none;
   }
   .chip-idle {
-    @apply border-violet-300/20 bg-violet-500/5 text-violet-100/80 hover:border-violet-300/40 hover:bg-violet-500/15;
+    @apply border-white/15 bg-white/5 text-violet-100/80 hover:border-violet-400/40 hover:bg-violet-500/15;
   }
   .chip-active {
     @apply border-violet-400 bg-violet-600/45 text-white shadow-sm shadow-violet-500/25;

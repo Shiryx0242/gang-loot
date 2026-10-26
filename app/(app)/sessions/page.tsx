@@ -142,7 +142,7 @@ export default function HistoryPage() {
           const paidCount = s.session_players.filter((p) => p.is_paid).length;
           return (
             <li key={s.id}>
-              <Link href={`/sessions/${s.id}`} className="card block transition hover:bg-[#231954]/85">
+              <Link href={`/sessions/${s.id}`} className="card block transition hover:bg-[#161620]">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-violet-200/70">{formatThaiDate(s.session_date)}</span>

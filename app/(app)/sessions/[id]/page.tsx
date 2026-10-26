@@ -961,7 +961,7 @@ export default function SessionEditorPage() {
 
         {/* ส่วนเลือกไอเทมสำเร็จรูป (Chips) */}
         {canEdit && (
-          <div className="space-y-2 rounded-xl border border-violet-300/15 bg-[#120b2e]/70 p-3">
+          <div className="space-y-2 rounded-xl border border-white/10 bg-[#07070b] p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs text-violet-200/80">
                 เลือกไอเทมด่วน (คลิกเพื่อเพิ่ม / คลิกซ้ำเพื่อ +1 / คลิกขวาเพื่อลด)
@@ -1023,7 +1023,7 @@ export default function SessionEditorPage() {
             const canSaveAsPreset = canEdit && Boolean(p.name) && p.price !== null && !matchedPreset;
 
             return (
-              <div key={it.key} className="rounded-xl border border-violet-300/15 bg-[#120b2e]/50 p-2.5">
+              <div key={it.key} className="rounded-xl border border-white/10 bg-[#07070b] p-2.5">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <input
                     className="input sm:flex-1"
@@ -1131,7 +1131,7 @@ export default function SessionEditorPage() {
       )}
 
       {/* แถบสรุปติดด้านล่าง */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-violet-300/20 bg-[#0b061d]/95 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-white/15 bg-black/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 tabular-nums">
             <span className="text-sm text-violet-200/70">รวม</span>
